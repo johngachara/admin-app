@@ -1,4 +1,4 @@
-import { ChakraProvider, Box } from '@chakra-ui/react';
+import {ChakraProvider, Box, useBreakpointValue} from '@chakra-ui/react';
 import { BrowserRouter as Router, Route, Routes, Outlet } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
@@ -17,14 +17,25 @@ import {setAuthToken} from "./components/axiosInstance.js";
 import {useEffect} from "react";
 
 // Protected layout component that includes Navbar
-const ProtectedLayout = () => (
-    <Box minH="100vh" bg="gray.50" maxW="100%">
-        <Navbar />
-        <Box as="main" p={4} ml={{ base: 0, md: 60 }} maxW="100%">
-            <Outlet />
+const ProtectedLayout = () => {
+    const isMobile = useBreakpointValue({ base: true, md: false });
+
+    return (
+        <Box minH="100vh" bg="gray.50" maxW="100%">
+            <Navbar />
+            <Box
+                as="main"
+                p={4}
+                ml={{ base: 0, md: 60 }}
+                maxW="100%"
+                pt={isMobile ? "64px" : "0"}
+            >
+                <Outlet />
+            </Box>
         </Box>
-    </Box>
-);
+    );
+};
+
 
 function App() {
     const { getToken } = useAuth();
@@ -34,7 +45,7 @@ function App() {
     }, [getToken]);
     return (
         <ChakraProvider theme={theme}>
-            <Router >
+            <Router basename="/">
                 <Routes>
                     {/* Public route - Sign In */}
                     <Route path="/" element={<SignInPage />} />

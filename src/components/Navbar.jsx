@@ -21,7 +21,7 @@ import {
     FiLogOut,
     FiMenu
 } from 'react-icons/fi';
-import { SignOutButton } from "@clerk/clerk-react";
+import {  SignOutButton } from "@clerk/clerk-react";
 
 const NavItem = ({ icon, children, to, isActive, isCollapsed, onClick, isSignOut }) => {
     const Content = (
@@ -102,6 +102,7 @@ const Navbar = () => {
                         Analytics
                     </Text>
                 )}
+
             </Flex>
             <VStack spacing={0} align="stretch">
                 {navItems.map((item) => (
@@ -131,46 +132,42 @@ const Navbar = () => {
     // Mobile sticky navbar
     if (isMobile) {
         return (
-            <Box position="relative" h="100vh">
-                {/* Header */}
-                <Box
-                    bg={bgColor}
-                    borderBottom="1px"
-                    borderBottomColor={borderColor}
-                    position="fixed"
-                    top="0"
-                    left="0"
-                    right="0"
-                    zIndex="1000"
-                >
-                    <Flex justify="space-between" align="center" p={4}>
-                        <Text fontSize="xl" fontWeight="bold">
-                            Analytics
-                        </Text>
-                        <HStack spacing={4}>
-                            <Icon
-                                as={FiMenu}
-                                boxSize={6}
-                                onClick={() => setIsOpen(!isOpen)}
-                                cursor="pointer"
-                            />
-                        </HStack>
-                    </Flex>
-                </Box>
-
-                {/* Mobile Menu */}
+            <Box
+                bg={bgColor}
+                borderBottom="1px"
+                borderBottomColor={borderColor}
+                position="sticky"
+                top="0"
+                zIndex="1000"
+                w="100%"
+            >
+                <Flex justify="space-between" align="center" p={4}>
+                    <Text fontSize="xl" fontWeight="bold">
+                       Alltech Analytics
+                    </Text>
+                    <HStack spacing={4}>
+                        <Icon
+                            as={FiMenu}
+                            boxSize={6}
+                            onClick={() => setIsOpen(!isOpen)}
+                            cursor="pointer"
+                        />
+                    </HStack>
+                </Flex>
                 {isOpen && (
                     <Box
                         position="fixed"
-                        top="64px" // Height of the header
+                        top="64px"
                         left="0"
                         right="0"
-                        bottom="0"
+                        bottom="0" // Make it extend to bottom of screen
                         bg={bgColor}
-                        zIndex="999"
-                        overflowY="auto"
                         borderBottom="1px"
                         borderBottomColor={borderColor}
+                        zIndex="1000"
+                        overflowY="auto" // Allow scrolling if content is too long
+                        maxHeight="calc(100vh - 64px)" // Subtract header height
+                        width="100vw" // Full viewport width
                     >
                         <NavContent />
                     </Box>
@@ -179,7 +176,7 @@ const Navbar = () => {
         );
     }
 
-    // Desktop view
+
     return (
         <Box
             bg={bgColor}
