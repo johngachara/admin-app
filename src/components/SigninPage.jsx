@@ -9,6 +9,7 @@ const SignInPage = () => {
         <Box
             minH="100vh"
             display="flex"
+            maxW="100%"
             alignItems="center"
             justifyContent="center"
             bg={bgColor}
@@ -17,17 +18,23 @@ const SignInPage = () => {
             <Container
                 maxW="md"
                 w="full"
-                mx="auto"
+                px={0} // Remove horizontal padding
+                centerContent // Center the content
             >
                 <SignIn
                     appearance={{
                         elements: {
-                            rootBox: "mx-auto",
+                            rootBox: {
+                                width: '100%', // Ensure full width
+                                margin: '0 auto'
+                            },
                             card: {
                                 boxShadow: 'lg',
                                 borderRadius: 'xl',
                                 padding: '8',
-                                backgroundColor: cardBg
+                                backgroundColor: cardBg,
+                                width: '100%', // Ensure card takes full width
+                                maxWidth: '100%' // Prevent overflow
                             },
                             formButtonPrimary: {
                                 backgroundColor: 'blue.500',
