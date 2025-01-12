@@ -34,7 +34,7 @@ function App() {
     }, [getToken]);
     return (
         <ChakraProvider theme={theme}>
-            <Router>
+            <Router basename="/">
                 <Routes>
                     {/* Public route - Sign In */}
                     <Route path="/" element={<SignInPage />} />
