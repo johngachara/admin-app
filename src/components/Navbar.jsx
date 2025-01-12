@@ -7,8 +7,16 @@ import {
     Text,
     VStack,
     HStack,
+    IconButton,
     useColorModeValue,
-    useBreakpointValue
+    useBreakpointValue,
+    Drawer,
+    DrawerBody,
+    DrawerHeader,
+    DrawerOverlay,
+    DrawerContent,
+    DrawerCloseButton,
+    useDisclosure
 } from '@chakra-ui/react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import {
@@ -19,9 +27,11 @@ import {
     FiBox,
     FiBarChart2,
     FiLogOut,
-    FiMenu
+    FiMenu,
+    FiChevronLeft,
+    FiChevronRight
 } from 'react-icons/fi';
-import {  SignOutButton } from "@clerk/clerk-react";
+import { SignOutButton } from "@clerk/clerk-react";
 
 const NavItem = ({ icon, children, to, isActive, isCollapsed, onClick, isSignOut }) => {
     const Content = (
@@ -40,6 +50,7 @@ const NavItem = ({ icon, children, to, isActive, isCollapsed, onClick, isSignOut
             }}
             justifyContent={isCollapsed ? 'center' : 'flex-start'}
             onClick={onClick}
+            w="full"
         >
             {icon && (
                 <Icon
@@ -63,6 +74,7 @@ const NavItem = ({ icon, children, to, isActive, isCollapsed, onClick, isSignOut
             to={to}
             style={{ textDecoration: 'none' }}
             _focus={{ boxShadow: 'none' }}
+            w="full"
         >
             {Content}
         </Link>
@@ -72,9 +84,9 @@ const NavItem = ({ icon, children, to, isActive, isCollapsed, onClick, isSignOut
 const Navbar = () => {
     const location = useLocation();
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [isOpen, setIsOpen] = useState(false);
+    const { isOpen, onOpen, onClose } = useDisclosure();
 
-    const isMobile = useBreakpointValue({ base: true, md: false });
+    const isMobile = useBreakpointValue({ base: true, lg: false });
     const bgColor = useColorModeValue('white', 'gray.900');
     const borderColor = useColorModeValue('gray.200', 'gray.700');
 
@@ -90,19 +102,27 @@ const Navbar = () => {
 
     const handleNavItemClick = () => {
         if (isMobile) {
-            setIsOpen(false);
+            onClose();
         }
     };
 
     const NavContent = () => (
-        <Box w="full">
-            <Flex h="20" alignItems="center" justifyContent="space-between" mx="8">
+        <Box w="full" h="full" overflowY="auto">
+            <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
                 {!isCollapsed && (
                     <Text fontSize="2xl" fontFamily="monospace" fontWeight="bold">
                         Analytics
                     </Text>
                 )}
-
+                {!isMobile && (
+                    <IconButton
+                        display={{ base: 'none', lg: 'flex' }}
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        aria-label="Toggle Navigation"
+                        icon={isCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
+                        size="sm"
+                    />
+                )}
             </Flex>
             <VStack spacing={0} align="stretch">
                 {navItems.map((item) => (
@@ -129,62 +149,66 @@ const Navbar = () => {
         </Box>
     );
 
-    // Mobile sticky navbar
+    // Mobile version with Drawer
     if (isMobile) {
         return (
-            <Box
-                bg={bgColor}
-                borderBottom="1px"
-                borderBottomColor={borderColor}
-                position="sticky"
-                top="0"
-                zIndex="1000"
-                w="100%"
-            >
-                <Flex justify="space-between" align="center" p={4}>
-                    <Text fontSize="xl" fontWeight="bold">
-                       Alltech Analytics
+            <>
+                <Flex
+                    bg={bgColor}
+                    borderBottom="1px"
+                    borderBottomColor={borderColor}
+                    position="fixed"
+                    top="0"
+                    width="full"
+                    zIndex="1000"
+                    h="16"
+                    alignItems="center"
+                    px="4"
+                >
+                    <IconButton
+                        aria-label="Open Menu"
+                        icon={<FiMenu />}
+                        onClick={onOpen}
+                        variant="ghost"
+                    />
+                    <Text ml="4" fontSize="xl" fontWeight="bold">
+                        Alltech Analytics
                     </Text>
-                    <HStack spacing={4}>
-                        <Icon
-                            as={FiMenu}
-                            boxSize={6}
-                            onClick={() => setIsOpen(!isOpen)}
-                            cursor="pointer"
-                        />
-                    </HStack>
                 </Flex>
-                {isOpen && (
-                    <Box
-                        position="fixed"
-                        top="64px"
-                        left="0"
-                        right="0"
-                        bottom="0" // Make it extend to bottom of screen
-                        bg={bgColor}
-                        borderBottom="1px"
-                        borderBottomColor={borderColor}
-                        zIndex="1000"
-                        overflowY="auto" // Allow scrolling if content is too long
-                        maxHeight="calc(100vh - 64px)" // Subtract header height
-                        width="100vw" // Full viewport width
-                    >
-                        <NavContent />
-                    </Box>
-                )}
-            </Box>
+
+                <Drawer
+                    isOpen={isOpen}
+                    placement="left"
+                    onClose={onClose}
+                    size="full"
+                >
+                    <DrawerOverlay />
+                    <DrawerContent>
+                        <DrawerCloseButton />
+                        <DrawerHeader borderBottomWidth="1px">
+                            Navigation Menu
+                        </DrawerHeader>
+                        <DrawerBody p="0">
+                            <NavContent />
+                        </DrawerBody>
+                    </DrawerContent>
+                </Drawer>
+
+                {/* Spacer to prevent content from hiding under the fixed header */}
+                <Box h="16" />
+            </>
         );
     }
 
-
+    // Desktop version
     return (
         <Box
             bg={bgColor}
             borderRight="1px"
             borderRightColor={borderColor}
             w={isCollapsed ? '20' : '60'}
+            h="100vh"
             pos="fixed"
-            h="full"
             transition="width 0.2s"
         >
             <NavContent />
