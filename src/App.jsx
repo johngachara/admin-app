@@ -16,19 +16,22 @@ import NotFoundPage from "./components/NotFoundPage.jsx";
 import {setAuthToken} from "./components/axiosInstance.js";
 import {useEffect} from "react";
 
-// Protected layout component that includes Navbar
 const ProtectedLayout = () => {
     const isMobile = useBreakpointValue({ base: true, md: false });
 
     return (
-        <Box minH="100vh" bg="gray.50" maxW="100%">
+        <Box minH="100vh" bg="gray.50" display="flex" flexDirection="column">
             <Navbar />
+
+            {/* Main Content */}
             <Box
                 as="main"
+                flex="1" // Ensures this takes up the remaining available space
                 p={4}
                 ml={{ base: 0, md: 60 }}
                 maxW="100%"
                 pt={isMobile ? "64px" : "0"}
+                overflowY="auto" // Enables scrolling if content overflows
             >
                 <Outlet />
             </Box>
