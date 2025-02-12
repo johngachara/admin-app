@@ -207,6 +207,7 @@ const Dashboard = () => {
 
                             {/* Product Performance Tab */}
                             <TabPanel p={0} pt={6}>
+                                <Box width="100%">
                                 <Grid templateColumns={{ base: "1fr", xl: "3fr 2fr" }} gap={6}>
                                     <ChartContainer title="Top Products Revenue">
                                         <BarChart data={products?.current_year_performance?.slice(0, 5)}>
@@ -219,6 +220,7 @@ const Dashboard = () => {
                                         </BarChart>
                                     </ChartContainer>
                                 </Grid>
+                                </Box>
                             </TabPanel>
                         </TabPanels>
                     </Tabs>
