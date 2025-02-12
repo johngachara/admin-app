@@ -134,9 +134,7 @@ const Dashboard = () => {
 
     const { dashboard, patterns, products } = data;
     const topProduct = products?.current_year_performance?.[0];
-    const peakHour = patterns?.hourly_patterns?.reduce((max, hour) =>
-        hour.total_sales > max.total_sales ? hour : max
-    );
+
 
     return (
         <Box minH="100vh" bg={bgColor} p={{ base: 4, lg: 6 }} maxW="100%">
@@ -153,11 +151,7 @@ const Dashboard = () => {
                             subtext={`vs Yesterday (${dashboard?.yesterday_total_sales?.toLocaleString()})`}
                             trend={dashboard?.today_metrics?.total_sales > dashboard?.yesterday_total_sales ? 'increase' : 'decrease'}
                         />
-                        <StatCardComponent
-                            label="Peak Hour Sales"
-                            value={peakHour?.total_sales}
-                            subtext={`at ${formatHour(peakHour?.hour)}`}
-                        />
+
                         <StatCardComponent
                             label="Top Product"
                             value={topProduct?.total_revenue}

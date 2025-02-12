@@ -34,7 +34,7 @@ export const api = {
         },
     },
     monthly: {
-        getAnalysis: async (months = 12) => {
+        getAnalysis: async (months = 6) => {
             try {
                 const response = await axiosInstance.get(`/monthly/?months=${months}`);
                 return response.data;

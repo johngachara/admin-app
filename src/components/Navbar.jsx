@@ -97,7 +97,6 @@ const Navbar = () => {
         { icon: FiBarChart2, label: 'Yearly Analysis', path: '/yearly' },
         { icon: FiUsers, label: 'Customer Insights', path: '/customers' },
         { icon: FiBox, label: 'Product Insights', path: '/products' },
-        { icon: FiBarChart2, label: 'Sales Patterns', path: '/patterns' }
     ];
 
     const handleNavItemClick = () => {

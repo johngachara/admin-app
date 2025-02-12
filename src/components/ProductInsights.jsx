@@ -87,7 +87,7 @@ const ProductInsights = () => {
         return acc;
     }, { current: 0, previous: 0 });
 
-    const growthPercent = topProductGrowth.previous
+    const growthPercent = topProductGrowth?.previous
         ? ((topProductGrowth.current - topProductGrowth.previous) / topProductGrowth.previous) * 100
         : 0;
 

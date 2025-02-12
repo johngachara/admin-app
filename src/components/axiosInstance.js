@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const axiosInstance = axios.create({
     baseURL: 'https://www.gachara.store/api',
-    timeout: 10000, // 10 seconds timeout
+    timeout: 30000, // 30 seconds timeout
     headers: {
         'Content-Type': 'application/json',
     },

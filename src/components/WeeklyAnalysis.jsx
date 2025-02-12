@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { format, parseISO } from 'date-fns';
 import {
     Box,
     Select,
     Grid,
-    GridItem,
     Card,
     CardBody,
     Heading,
@@ -23,6 +23,9 @@ import {
     StatArrow,
     SimpleGrid,
     useToast,
+    VStack,
+    HStack,
+    useColorModeValue,
 } from '@chakra-ui/react';
 import {
     BarChart,
@@ -38,11 +41,44 @@ import {
 } from 'recharts';
 import { api } from '../utils/api';
 
+const formatDateToReadable = (dateString) => {
+    const date = parseISO(dateString);
+    return format(date, 'do MMM yyyy');
+};
+
+const StatCard = ({ label, value, helpText, trend, trendValue }) => (
+    <Card height="full">
+        <CardBody>
+            <Stat>
+                <StatLabel fontSize="sm" color="gray.600">{label}</StatLabel>
+                <StatNumber fontSize="2xl" my={2}>{value}</StatNumber>
+                <StatHelpText display="flex" alignItems="center" gap={1}>
+                    {trend && <StatArrow type={trend} />}
+                    {helpText}
+                    {trendValue && `${Math.abs(trendValue).toFixed(1)}%`}
+                </StatHelpText>
+            </Stat>
+        </CardBody>
+    </Card>
+);
+
+const ChartCard = ({ title, height = "400px", children }) => (
+    <Card height="full">
+        <CardBody>
+            <Heading size="md" mb={4}>{title}</Heading>
+            <Box height={height}>
+                <ResponsiveContainer>{children}</ResponsiveContainer>
+            </Box>
+        </CardBody>
+    </Card>
+);
+
 const WeeklyAnalysis = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [weeks, setWeeks] = useState(8);
     const toast = useToast();
+    const chartGridColor = useColorModeValue('gray.200', 'gray.600');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -69,7 +105,7 @@ const WeeklyAnalysis = () => {
     if (loading) {
         return (
             <Center h="100vh">
-                <Spinner size="xl" />
+                <Spinner size="xl" thickness="4px" />
             </Center>
         );
     }
@@ -81,144 +117,81 @@ const WeeklyAnalysis = () => {
         : 0;
 
     return (
-        <Box p={4}>
-            <Stack spacing={8}>
-                <Stack direction="row" justify="space-between" align="center">
-                    <Heading>Weekly Analysis ({data?.current_year})</Heading>
+        <Box
+            height="100%"
+            p={6}
+            overflow="auto"
+        >
+            <VStack spacing={6} align="stretch">
+                <HStack justify="space-between" align="center">
+                    <Heading size="lg">Weekly Analysis ({data?.current_year})</Heading>
                     <Select
                         value={weeks}
                         onChange={(e) => setWeeks(Number(e.target.value))}
                         width="200px"
+                        size="md"
                     >
                         <option value={4}>Last 4 weeks</option>
                         <option value={8}>Last 8 weeks</option>
                         <option value={12}>Last 12 weeks</option>
                         <option value={26}>Last 26 weeks</option>
                     </Select>
-                </Stack>
+                </HStack>
 
-                {/* Key Metrics */}
                 <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
-                    <Card>
-                        <CardBody>
-                            <Stat>
-                                <StatLabel>Weekly Sales</StatLabel>
-                                <StatNumber>{currentWeek?.total_sales.toLocaleString()}</StatNumber>
-                                <StatHelpText>
-                                    <StatArrow type={salesChange >= 0 ? 'increase' : 'decrease'} />
-                                    {Math.abs(salesChange).toFixed(1)}% from last week
-                                </StatHelpText>
-                            </Stat>
-                        </CardBody>
-                    </Card>
-
-                    <Card>
-                        <CardBody>
-                            <Stat>
-                                <StatLabel>Total Orders</StatLabel>
-                                <StatNumber>{currentWeek?.total_orders}</StatNumber>
-                                <StatHelpText>
-                                    {currentWeek?.total_items} items sold
-                                </StatHelpText>
-                            </Stat>
-                        </CardBody>
-                    </Card>
-
-                    <Card>
-                        <CardBody>
-                            <Stat>
-                                <StatLabel>Unique Customers</StatLabel>
-                                <StatNumber>{currentWeek?.unique_customers}</StatNumber>
-                                <StatHelpText>
-                                    Active buyers this week
-                                </StatHelpText>
-                            </Stat>
-                        </CardBody>
-                    </Card>
-
-                    <Card>
-                        <CardBody>
-                            <Stat>
-                                <StatLabel>Average Order Value</StatLabel>
-                                <StatNumber>
-                                    {currentWeek?.average_order_value.toFixed(2)}
-                                </StatNumber>
-                                <StatHelpText>
-                                    Per order average
-                                </StatHelpText>
-                            </Stat>
-                        </CardBody>
-                    </Card>
+                    <StatCard
+                        label="Weekly Sales"
+                        value={currentWeek?.total_sales.toLocaleString()}
+                        trend={salesChange >= 0 ? 'increase' : 'decrease'}
+                        trendValue={salesChange}
+                        helpText="from last week"
+                    />
+                    <StatCard
+                        label="Total Orders"
+                        value={currentWeek?.total_orders}
+                        helpText={`${currentWeek?.total_items} items sold`}
+                    />
+                    <StatCard
+                        label="Unique Customers"
+                        value={currentWeek?.unique_customers}
+                        helpText="Active buyers this week"
+                    />
+                    <StatCard
+                        label="Average Order Value"
+                        value={currentWeek?.average_order_value.toFixed(2)}
+                        helpText="Per order average"
+                    />
                 </SimpleGrid>
 
-                {/* Charts Grid */}
-                <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
-                    {/* Weekly Sales Trend */}
-                    <GridItem>
-                        <Card>
-                            <CardBody>
-                                <Heading size="md" mb={4}>Weekly Sales Trend</Heading>
-                                <Box h="400px">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={data?.weekly_summary || []}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis
-                                                dataKey="week"
-                                                tickFormatter={(date) => new Date(date).toLocaleDateString()}
-                                            />
-                                            <YAxis />
-                                            <Tooltip
-                                                labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                                                formatter={(value) => [ value.toLocaleString()]}
-                                            />
-                                            <Legend />
-                                            <Bar
-                                                name="Total Sales"
-                                                dataKey="total_sales"
-                                                fill="#3182ce"
-                                            />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </Box>
-                            </CardBody>
-                        </Card>
-                    </GridItem>
+                <Box width="full">
+                    <ChartCard title="Weekly Sales Trend">
+                        <BarChart
+                            data={data?.weekly_summary || []}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                            <XAxis
+                                dataKey="week"
+                                tickFormatter={formatDateToReadable}
+                                height={60}
+                                tick={{ angle: -45, textAnchor: 'end' }}
+                            />
+                            <YAxis />
+                            <Tooltip
+                                labelFormatter={formatDateToReadable}
+                                formatter={(value) => [value.toLocaleString(), "Sales"]}
+                            />
+                            <Legend />
+                            <Bar
+                                name="Week"
+                                dataKey="total_sales"
+                                fill="#3182CE"
+                                radius={[4, 4, 0, 0]}
+                            />
+                        </BarChart>
+                    </ChartCard>
+                </Box>
 
-                    {/* Previous Year Comparison */}
-                    <GridItem>
-                        <Card>
-                            <CardBody>
-                                <Heading size="md" mb={4}>Previous Year Sales</Heading>
-                                <Box h="400px">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={data?.previous_year_comparison || []}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis
-                                                dataKey="week"
-                                                tickFormatter={(date) => new Date(date).toLocaleDateString()}
-                                            />
-                                            <YAxis />
-                                            <Tooltip
-                                                labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                                                formatter={(value) => [ value.toLocaleString()]}
-                                            />
-                                            <Legend />
-                                            <Line
-                                                name="Previous Year Sales"
-                                                type="monotone"
-                                                dataKey="total_sales"
-                                                stroke="#805AD5"
-                                                strokeWidth={2}
-                                            />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </Box>
-                            </CardBody>
-                        </Card>
-                    </GridItem>
-                </Grid>
-
-                {/* Weekly Summary Table */}
                 <Card>
                     <CardBody>
                         <Heading size="md" mb={4}>Current Period Performance</Heading>
@@ -238,13 +211,13 @@ const WeeklyAnalysis = () => {
                                 <Tbody>
                                     {data?.weekly_summary?.map((week) => (
                                         <Tr key={week.week}>
-                                            <Td>{new Date(week.week).toLocaleDateString()}</Td>
+                                            <Td>{formatDateToReadable(week.week)}</Td>
                                             <Td isNumeric>{week.total_sales.toLocaleString()}</Td>
                                             <Td isNumeric>{week.total_orders}</Td>
                                             <Td isNumeric>{week.unique_customers}</Td>
                                             <Td isNumeric>{week.average_order_value.toFixed(2)}</Td>
-                                            <Td>{new Date(week.busiest_day).toLocaleDateString()}</Td>
-                                            <Td>{new Date(week.slowest_day).toLocaleDateString()}</Td>
+                                            <Td>{formatDateToReadable(week.busiest_day)}</Td>
+                                            <Td>{formatDateToReadable(week.slowest_day)}</Td>
                                         </Tr>
                                     ))}
                                 </Tbody>
@@ -253,7 +226,6 @@ const WeeklyAnalysis = () => {
                     </CardBody>
                 </Card>
 
-                {/* Previous Year Table */}
                 <Card>
                     <CardBody>
                         <Heading size="md" mb={4}>Previous Year Comparison</Heading>
@@ -268,7 +240,7 @@ const WeeklyAnalysis = () => {
                                 <Tbody>
                                     {data?.previous_year_comparison?.map((week) => (
                                         <Tr key={week.week}>
-                                            <Td>{new Date(week.week).toLocaleDateString()}</Td>
+                                            <Td>{formatDateToReadable(week.week)}</Td>
                                             <Td isNumeric>{week.total_sales.toLocaleString()}</Td>
                                         </Tr>
                                     ))}
@@ -277,7 +249,7 @@ const WeeklyAnalysis = () => {
                         </Box>
                     </CardBody>
                 </Card>
-            </Stack>
+            </VStack>
         </Box>
     );
 };

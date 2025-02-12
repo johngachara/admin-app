@@ -7,7 +7,6 @@ import MonthlyAnalysis from './components/MonthlyAnalysis';
 import YearlyAnalysis from './components/YearlyAnalysis';
 import CustomerInsights from './components/CustomerInsights';
 import ProductInsights from './components/ProductInsights';
-import SalesPatterns from './components/SalesPatterns';
 import { theme } from './theme';
 import SignInPage from "./components/SigninPage";
 import {Protect, useAuth} from "@clerk/clerk-react";
@@ -20,20 +19,32 @@ const ProtectedLayout = () => {
     const isMobile = useBreakpointValue({ base: true, md: false });
 
     return (
-        <Box minH="100vh" bg="gray.50" display="flex" flexDirection="column">
+        <Box
+            height="100vh"
+            width="100vw"
+            overflow="hidden"
+            display="flex"
+            flexDirection="column"
+        >
             <Navbar />
-
-            {/* Main Content */}
             <Box
                 as="main"
-                flex="1" // Ensures this takes up the remaining available space
-                p={4}
+                flex="1"
                 ml={{ base: 0, md: 60 }}
-                maxW="100%"
-                pt={isMobile ? "64px" : "0"}
-                overflowY="auto" // Enables scrolling if content overflows
+                position="relative"
+                overflow="hidden"
             >
-                <Outlet />
+                <Box
+                    position="absolute"
+                    top={isMobile ? "64px" : 0}
+                    right={0}
+                    bottom={0}
+                    left={0}
+                    overflowY="auto"
+                    overflowX="hidden"
+                >
+                    <Outlet />
+                </Box>
             </Box>
         </Box>
     );
@@ -67,7 +78,6 @@ function App() {
                         <Route path="/yearly" element={<YearlyAnalysis />} />
                         <Route path="/customers" element={<CustomerInsights />} />
                         <Route path="/products" element={<ProductInsights />} />
-                        <Route path="/patterns" element={<SalesPatterns />} />
                         <Route path="*" element={<NotFoundPage />} />
                     </Route>
                 </Routes>

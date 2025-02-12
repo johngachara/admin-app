@@ -113,28 +113,31 @@ const CustomerInsights = () => {
 
             </SimpleGrid>
 
-            <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8} mb={8} maxw="100%">
-                <GridItem>
-                    <Card>
-                        <CardBody>
-                            <Heading size="md" mb={4}>Top Customer Distribution</Heading>
-                            <Box h="400px">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={data?.current_year_top_customers?.slice(0, 10) || []}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="customer_name" />
-                                        <YAxis />
-                                        <Tooltip formatter={(value) => [value.toFixed(2)]} />
-                                        <Legend />
-                                        <Bar name="Total Spent" dataKey="total_spent" fill="#3182ce" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </Box>
-                        </CardBody>
-                    </Card>
-                </GridItem>
-            </Grid>
-
+            <Box width="100%">
+                <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8} mb={8} width="100%">
+                    <GridItem colSpan={{ base: 1, lg: 2 }}>
+                        <Card>
+                            <CardBody>
+                                <Heading size="md" mb={4}>
+                                    Top Customer Distribution
+                                </Heading>
+                                <Box h="400px">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={data?.current_year_top_customers?.slice(0, 10) || []}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="customer_name" />
+                                            <YAxis />
+                                            <Tooltip formatter={(value) => [value.toFixed(2)]} />
+                                            <Legend />
+                                            <Bar name="Total Spent" dataKey="total_spent" fill="#3182ce" />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </Box>
+                            </CardBody>
+                        </Card>
+                    </GridItem>
+                </Grid>
+            </Box>
             <Card>
                 <CardBody>
                     <Heading size="md" mb={4}>Top Customer Details</Heading>

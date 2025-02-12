@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from "react"
 import {
     Box,
     Grid,
@@ -21,7 +21,7 @@ import {
     Tr,
     Th,
     Td,
-} from '@chakra-ui/react';
+} from "@chakra-ui/react"
 import {
     BarChart,
     Bar,
@@ -33,48 +33,49 @@ import {
     Tooltip,
     ResponsiveContainer,
     Legend,
-} from 'recharts';
-import { api } from '../utils/api';
+} from "recharts"
+import { api } from "../utils/api"
 
 const MonthlyAnalysis = () => {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const toast = useToast();
+    const [data, setData] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const toast = useToast()
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await api.monthly.getAnalysis();
-                setData(response);
+                const response = await api.monthly.getAnalysis()
+                setData(response)
             } catch (error) {
                 toast({
-                    title: 'Error fetching monthly data',
+                    title: "Error fetching monthly data",
                     description: error.message,
-                    status: 'error',
+                    status: "error",
                     duration: 9000,
                     isClosable: true,
-                });
+                })
             } finally {
-                setLoading(false);
+                setLoading(false)
             }
-        };
+        }
 
-        fetchData();
-    }, [toast]);
+        fetchData()
+    }, [toast])
 
     if (loading) {
         return (
             <Center h="100vh">
                 <Spinner size="xl" />
             </Center>
-        );
+        )
     }
 
-    const currentMonth = data?.current_year_data?.[0];
-    const previousMonth = data?.current_year_data?.[1];
-    const salesChange = currentMonth && previousMonth
-        ? ((currentMonth.total_sales - previousMonth.total_sales) / previousMonth.total_sales) * 100
-        : 0;
+    const currentMonth = data?.current_year_data?.[0]
+    const previousMonth = data?.current_year_data?.[1]
+    const salesChange =
+        currentMonth && previousMonth
+            ? ((currentMonth.total_sales - previousMonth.total_sales) / previousMonth.total_sales) * 100
+            : 0
 
     return (
         <Box p={4}>
@@ -87,7 +88,7 @@ const MonthlyAnalysis = () => {
                             <StatLabel>Monthly Sales</StatLabel>
                             <StatNumber>{currentMonth?.total_sales.toLocaleString()}</StatNumber>
                             <StatHelpText>
-                                <StatArrow type={salesChange >= 0 ? 'increase' : 'decrease'} />
+                                <StatArrow type={salesChange >= 0 ? "increase" : "decrease"} />
                                 {Math.abs(salesChange).toFixed(1)}% from last month
                             </StatHelpText>
                         </Stat>
@@ -99,9 +100,7 @@ const MonthlyAnalysis = () => {
                         <Stat>
                             <StatLabel>Total Orders</StatLabel>
                             <StatNumber>{currentMonth?.total_orders}</StatNumber>
-                            <StatHelpText>
-                                {currentMonth?.average_order_value.toFixed(2)} avg. order
-                            </StatHelpText>
+                            <StatHelpText>{currentMonth?.average_order_value.toFixed(2)} avg. order</StatHelpText>
                         </Stat>
                     </CardBody>
                 </Card>
@@ -121,38 +120,38 @@ const MonthlyAnalysis = () => {
                         <Stat>
                             <StatLabel>Best Selling Product</StatLabel>
                             <StatNumber>{currentMonth?.best_selling_product?.total_quantity}</StatNumber>
-                            <StatHelpText>
-                                {currentMonth?.best_selling_product?.product_name}
-                            </StatHelpText>
+                            <StatHelpText>{currentMonth?.best_selling_product?.product_name}</StatHelpText>
                         </Stat>
                     </CardBody>
                 </Card>
             </SimpleGrid>
 
-            <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8} mb={8}>
+            {/* Updated Grid layout to show charts in a single row */}
+            <Box width="100%">
+            <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={8} mb={8}>
                 <GridItem>
                     <Card>
                         <CardBody>
-                            <Heading size="md" mb={4}>Monthly Sales Trend</Heading>
+                            <Heading size="md" mb={4}>
+                                Monthly Sales Trend
+                            </Heading>
                             <Box h="400px">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={data?.current_year_data || []}>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis
                                             dataKey="month"
-                                            tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, { month: 'short' })}
+                                            tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, { month: "short" })}
                                         />
                                         <YAxis />
                                         <Tooltip
-                                            labelFormatter={(date) => new Date(date).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                                            labelFormatter={(date) =>
+                                                new Date(date).toLocaleDateString(undefined, { month: "long", year: "numeric" })
+                                            }
                                             formatter={(value) => [value.toLocaleString()]}
                                         />
                                         <Legend />
-                                        <Bar
-                                            name="Total Sales"
-                                            dataKey="total_sales"
-                                            fill="#3182ce"
-                                        />
+                                        <Bar name="Total Sales" dataKey="total_sales" fill="#3182ce" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </Box>
@@ -163,19 +162,23 @@ const MonthlyAnalysis = () => {
                 <GridItem>
                     <Card>
                         <CardBody>
-                            <Heading size="md" mb={4}>Historical Comparison</Heading>
+                            <Heading size="md" mb={4}>
+                                Historical Comparison
+                            </Heading>
                             <Box h="400px">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart data={data?.historical_comparison || []}>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis
                                             dataKey="month"
-                                            tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, { month: 'short' })}
+                                            tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, { month: "short" })}
                                         />
                                         <YAxis />
                                         <Tooltip
-                                            labelFormatter={(date) => new Date(date).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-                                            formatter={(value) => [ value.toLocaleString()]}
+                                            labelFormatter={(date) =>
+                                                new Date(date).toLocaleDateString(undefined, { month: "long", year: "numeric" })
+                                            }
+                                            formatter={(value) => [value.toLocaleString()]}
                                         />
                                         <Legend />
                                         <Line
@@ -192,10 +195,12 @@ const MonthlyAnalysis = () => {
                     </Card>
                 </GridItem>
             </Grid>
-
+            </Box>
             <Card>
                 <CardBody>
-                    <Heading size="md" mb={4}>Monthly Performance Details</Heading>
+                    <Heading size="md" mb={4}>
+                        Monthly Performance Details
+                    </Heading>
                     <Box overflowX="auto">
                         <Table variant="simple">
                             <Thead>
@@ -212,7 +217,7 @@ const MonthlyAnalysis = () => {
                             <Tbody>
                                 {data?.current_year_data?.map((month) => (
                                     <Tr key={month.month}>
-                                        <Td>{new Date(month.month).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</Td>
+                                        <Td>{new Date(month.month).toLocaleDateString(undefined, { month: "long", year: "numeric" })}</Td>
                                         <Td isNumeric>{month.total_sales.toLocaleString()}</Td>
                                         <Td isNumeric>{month.total_orders}</Td>
                                         <Td isNumeric>{month.unique_customers}</Td>
@@ -227,7 +232,8 @@ const MonthlyAnalysis = () => {
                 </CardBody>
             </Card>
         </Box>
-    );
-};
+    )
+}
 
-export default MonthlyAnalysis;
+export default MonthlyAnalysis
+
