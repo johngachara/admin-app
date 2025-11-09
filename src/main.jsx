@@ -7,6 +7,15 @@ import { SpeedInsights } from "@vercel/speed-insights/react"
 if (!PUBLISHABLE_KEY) {
     throw new Error('Add your Clerk Publishable Key to the .env file')
 }
+if ('serviceWorker' in navigator) {
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            navigator.serviceWorker.getRegistration().then(reg => {
+                if (reg) reg.update()
+            })
+        }
+    })
+}
 createRoot(document.getElementById('root')).render(
   <StrictMode>
       <SpeedInsights/>
