@@ -21,6 +21,8 @@ import {
     Tr,
     Th,
     Td,
+    Text,
+    useColorModeValue,
 } from "@chakra-ui/react"
 import {
     BarChart,
@@ -36,10 +38,41 @@ import {
 } from "recharts"
 import { api } from "../utils/api"
 
+const CustomTooltip = ({ active, payload, label }) => {
+    const bg = useColorModeValue('white', 'gray.700');
+    const borderColor = useColorModeValue('gray.200', 'gray.600');
+
+    if (active && payload && payload.length) {
+        const date = new Date(label);
+        const monthYear = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+        return (
+            <Box
+                bg={bg}
+                p={3}
+                border="1px solid"
+                borderColor={borderColor}
+                borderRadius="md"
+                boxShadow="lg"
+            >
+                <Text fontSize="sm" fontWeight="bold" mb={1}>
+                    {monthYear}
+                </Text>
+                <Text fontSize="sm" color="blue.500">
+                    Sales: {payload[0].value.toLocaleString()}
+                </Text>
+            </Box>
+        );
+    }
+    return null;
+};
+
 const MonthlyAnalysis = () => {
     const [data, setData] = useState(null)
     const [loading, setLoading] = useState(true)
     const toast = useToast()
+    const chartGridColor = useColorModeValue('gray.200', 'gray.600');
+    const chartTextColor = useColorModeValue('gray.600', 'gray.300');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -65,7 +98,7 @@ const MonthlyAnalysis = () => {
     if (loading) {
         return (
             <Center h="100vh">
-                <Spinner size="xl" />
+                <Spinner size="xl" thickness="4px" color="blue.500" />
             </Center>
         )
     }
@@ -78,16 +111,20 @@ const MonthlyAnalysis = () => {
             : 0
 
     return (
-        <Box p={4}>
-            <Heading mb={6}>Monthly Analysis ({data?.current_year})</Heading>
+        <Box p={{ base: 3, md: 6 }} height="100%" overflow="auto">
+            <Heading mb={6} size={{ base: "md", md: "lg" }}>
+                Monthly Analysis ({data?.current_year})
+            </Heading>
 
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4} mb={8}>
-                <Card>
+            <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 3, md: 4 }} mb={8}>
+                <Card boxShadow="sm">
                     <CardBody>
                         <Stat>
-                            <StatLabel>Monthly Sales</StatLabel>
-                            <StatNumber>{currentMonth?.total_sales.toLocaleString()}</StatNumber>
-                            <StatHelpText>
+                            <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">Monthly Sales</StatLabel>
+                            <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
+                                {currentMonth?.total_sales.toLocaleString()}
+                            </StatNumber>
+                            <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
                                 <StatArrow type={salesChange >= 0 ? "increase" : "decrease"} />
                                 {Math.abs(salesChange).toFixed(1)}% from last month
                             </StatHelpText>
@@ -95,135 +132,177 @@ const MonthlyAnalysis = () => {
                     </CardBody>
                 </Card>
 
-                <Card>
+                <Card boxShadow="sm">
                     <CardBody>
                         <Stat>
-                            <StatLabel>Total Orders</StatLabel>
-                            <StatNumber>{currentMonth?.total_orders}</StatNumber>
-                            <StatHelpText>{currentMonth?.average_order_value.toFixed(2)} avg. order</StatHelpText>
+                            <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">Total Orders</StatLabel>
+                            <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
+                                {currentMonth?.total_orders}
+                            </StatNumber>
+                            <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+                                {currentMonth?.average_order_value.toFixed(2)} avg. order
+                            </StatHelpText>
                         </Stat>
                     </CardBody>
                 </Card>
 
-                <Card>
+                <Card boxShadow="sm">
                     <CardBody>
                         <Stat>
-                            <StatLabel>Unique Customers</StatLabel>
-                            <StatNumber>{currentMonth?.unique_customers}</StatNumber>
-                            <StatHelpText>Active buyers this month</StatHelpText>
+                            <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">Unique Customers</StatLabel>
+                            <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
+                                {currentMonth?.unique_customers}
+                            </StatNumber>
+                            <StatHelpText fontSize={{ base: "xs", md: "sm" }}>Active buyers this month</StatHelpText>
                         </Stat>
                     </CardBody>
                 </Card>
 
-                <Card>
+                <Card boxShadow="sm">
                     <CardBody>
                         <Stat>
-                            <StatLabel>Best Selling Product</StatLabel>
-                            <StatNumber>{currentMonth?.best_selling_product?.total_quantity}</StatNumber>
-                            <StatHelpText>{currentMonth?.best_selling_product?.product_name}</StatHelpText>
+                            <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">Best Selling Product</StatLabel>
+                            <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
+                                {currentMonth?.best_selling_product?.total_quantity}
+                            </StatNumber>
+                            <StatHelpText fontSize={{ base: "xs", md: "sm" }} noOfLines={1}>
+                                {currentMonth?.best_selling_product?.product_name}
+                            </StatHelpText>
                         </Stat>
                     </CardBody>
                 </Card>
             </SimpleGrid>
 
-            {/* Updated Grid layout to show charts in a single row */}
             <Box width="100%">
-            <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={8} mb={8}>
-                <GridItem>
-                    <Card>
-                        <CardBody>
-                            <Heading size="md" mb={4}>
-                                Monthly Sales Trend
-                            </Heading>
-                            <Box h="400px">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={data?.current_year_data || []}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis
-                                            dataKey="month"
-                                            tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, { month: "short" })}
-                                        />
-                                        <YAxis />
-                                        <Tooltip
-                                            labelFormatter={(date) =>
-                                                new Date(date).toLocaleDateString(undefined, { month: "long", year: "numeric" })
-                                            }
-                                            formatter={(value) => [value.toLocaleString()]}
-                                        />
-                                        <Legend />
-                                        <Bar name="Total Sales" dataKey="total_sales" fill="#3182ce" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </Box>
-                        </CardBody>
-                    </Card>
-                </GridItem>
+                <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={{ base: 4, md: 8 }} mb={{ base: 4, md: 8 }}>
+                    <GridItem>
+                        <Card boxShadow="md">
+                            <CardBody>
+                                <Heading size={{ base: "sm", md: "md" }} mb={4}>
+                                    Monthly Sales Trend
+                                </Heading>
+                                <Box h={{ base: "300px", md: "400px" }} overflowX="auto">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart
+                                            data={data?.current_year_data || []}
+                                            margin={{ top: 20, right: 10, left: 0, bottom: 40 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                                            <XAxis
+                                                dataKey="month"
+                                                tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: "short" })}
+                                                tick={{ fill: chartTextColor, fontSize: 11 }}
+                                                angle={-45}
+                                                textAnchor="end"
+                                                height={60}
+                                            />
+                                            <YAxis
+                                                tick={{ fill: chartTextColor, fontSize: 11 }}
+                                                width={60}
+                                            />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} />
+                                            <Bar
+                                                name="Total Sales"
+                                                dataKey="total_sales"
+                                                fill="#3182ce"
+                                                radius={[8, 8, 0, 0]}
+                                                maxBarSize={50}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </Box>
+                            </CardBody>
+                        </Card>
+                    </GridItem>
 
-                <GridItem>
-                    <Card>
-                        <CardBody>
-                            <Heading size="md" mb={4}>
-                                Historical Comparison
-                            </Heading>
-                            <Box h="400px">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={data?.historical_comparison || []}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis
-                                            dataKey="month"
-                                            tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, { month: "short" })}
-                                        />
-                                        <YAxis />
-                                        <Tooltip
-                                            labelFormatter={(date) =>
-                                                new Date(date).toLocaleDateString(undefined, { month: "long", year: "numeric" })
-                                            }
-                                            formatter={(value) => [value.toLocaleString()]}
-                                        />
-                                        <Legend />
-                                        <Line
-                                            name="Historical Sales"
-                                            type="monotone"
-                                            dataKey="total_sales"
-                                            stroke="#3182ce"
-                                            strokeWidth={2}
-                                        />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </Box>
-                        </CardBody>
-                    </Card>
-                </GridItem>
-            </Grid>
+                    <GridItem>
+                        <Card boxShadow="md">
+                            <CardBody>
+                                <Heading size={{ base: "sm", md: "md" }} mb={4}>
+                                    Historical Comparison
+                                </Heading>
+                                <Box h={{ base: "300px", md: "400px" }} overflowX="auto">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart
+                                            data={data?.historical_comparison || []}
+                                            margin={{ top: 20, right: 10, left: 0, bottom: 40 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                                            <XAxis
+                                                dataKey="month"
+                                                tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: "short" })}
+                                                tick={{ fill: chartTextColor, fontSize: 11 }}
+                                                angle={-45}
+                                                textAnchor="end"
+                                                height={60}
+                                            />
+                                            <YAxis
+                                                tick={{ fill: chartTextColor, fontSize: 11 }}
+                                                width={60}
+                                            />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} />
+                                            <Line
+                                                name="Historical Sales"
+                                                type="monotone"
+                                                dataKey="total_sales"
+                                                stroke="#3182ce"
+                                                strokeWidth={3}
+                                                dot={{ r: 4 }}
+                                                activeDot={{ r: 6 }}
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </Box>
+                            </CardBody>
+                        </Card>
+                    </GridItem>
+                </Grid>
             </Box>
-            <Card>
+
+            <Card boxShadow="md">
                 <CardBody>
-                    <Heading size="md" mb={4}>
+                    <Heading size={{ base: "sm", md: "md" }} mb={4}>
                         Monthly Performance Details
                     </Heading>
                     <Box overflowX="auto">
-                        <Table variant="simple">
+                        <Table variant="simple" size={{ base: "sm", md: "md" }}>
                             <Thead>
                                 <Tr>
-                                    <Th>Month</Th>
-                                    <Th isNumeric>Total Sales</Th>
-                                    <Th isNumeric>Orders</Th>
-                                    <Th isNumeric>Unique Customers</Th>
-                                    <Th isNumeric>Avg Order Value</Th>
-                                    <Th>Best Selling Product</Th>
-                                    <Th isNumeric>Product Quantity</Th>
+                                    <Th fontSize={{ base: "xs", md: "sm" }}>Month</Th>
+                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Total Sales</Th>
+                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Orders</Th>
+                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>Customers</Th>
+                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Avg Order</Th>
+                                    <Th fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Best Product</Th>
+                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>Qty</Th>
                                 </Tr>
                             </Thead>
                             <Tbody>
                                 {data?.current_year_data?.map((month) => (
                                     <Tr key={month.month}>
-                                        <Td>{new Date(month.month).toLocaleDateString(undefined, { month: "long", year: "numeric" })}</Td>
-                                        <Td isNumeric>{month.total_sales.toLocaleString()}</Td>
-                                        <Td isNumeric>{month.total_orders}</Td>
-                                        <Td isNumeric>{month.unique_customers}</Td>
-                                        <Td isNumeric>{month.average_order_value.toFixed(2)}</Td>
-                                        <Td>{month.best_selling_product?.product_name}</Td>
-                                        <Td isNumeric>{month.best_selling_product?.total_quantity}</Td>
+                                        <Td fontSize={{ base: "xs", md: "sm" }}>
+                                            {new Date(month.month).toLocaleDateString('en-US', { month: "short", year: "numeric" })}
+                                        </Td>
+                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold">
+                                            {month.total_sales.toLocaleString()}
+                                        </Td>
+                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }}>
+                                            {month.total_orders}
+                                        </Td>
+                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
+                                            {month.unique_customers}
+                                        </Td>
+                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>
+                                            {month.average_order_value.toFixed(2)}
+                                        </Td>
+                                        <Td fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }} maxW="150px" isTruncated>
+                                            {month.best_selling_product?.product_name}
+                                        </Td>
+                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>
+                                            {month.best_selling_product?.total_quantity}
+                                        </Td>
                                     </Tr>
                                 ))}
                             </Tbody>
@@ -236,4 +315,3 @@ const MonthlyAnalysis = () => {
 }
 
 export default MonthlyAnalysis
-

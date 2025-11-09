@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { format, parseISO } from 'date-fns';
 import {
     Box,
     Select,
-    Grid,
     Card,
     CardBody,
     Heading,
@@ -15,7 +13,6 @@ import {
     Tr,
     Th,
     Td,
-    Stack,
     Stat,
     StatLabel,
     StatNumber,
@@ -26,6 +23,7 @@ import {
     VStack,
     HStack,
     useColorModeValue,
+    Text,
 } from '@chakra-ui/react';
 import {
     BarChart,
@@ -35,43 +33,86 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    LineChart,
-    Line,
     Legend,
 } from 'recharts';
 import { api } from '../utils/api';
 
 const formatDateToReadable = (dateString) => {
-    const date = parseISO(dateString);
-    return format(date, 'do MMM yyyy');
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const suffix = day === 1 || day === 21 || day === 31 ? 'st' :
+        day === 2 || day === 22 ? 'nd' :
+            day === 3 || day === 23 ? 'rd' : 'th';
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    return `${day}${suffix} ${month} ${year}`;
+};
+
+const formatDateShort = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
 const StatCard = ({ label, value, helpText, trend, trendValue }) => (
-    <Card height="full">
+    <Card height="full" boxShadow="sm">
         <CardBody>
             <Stat>
-                <StatLabel fontSize="sm" color="gray.600">{label}</StatLabel>
-                <StatNumber fontSize="2xl" my={2}>{value}</StatNumber>
-                <StatHelpText display="flex" alignItems="center" gap={1}>
+                <StatLabel fontSize={{ base: "xs", md: "sm" }} color="gray.600" fontWeight="medium">
+                    {label}
+                </StatLabel>
+                <StatNumber fontSize={{ base: "xl", md: "2xl" }} my={2} fontWeight="bold">
+                    {value}
+                </StatNumber>
+                <StatHelpText display="flex" alignItems="center" gap={1} fontSize={{ base: "xs", md: "sm" }}>
                     {trend && <StatArrow type={trend} />}
                     {helpText}
-                    {trendValue && `${Math.abs(trendValue).toFixed(1)}%`}
+                    {trendValue && ` ${Math.abs(trendValue).toFixed(1)}%`}
                 </StatHelpText>
             </Stat>
         </CardBody>
     </Card>
 );
 
-const ChartCard = ({ title, height = "400px", children }) => (
-    <Card height="full">
-        <CardBody>
-            <Heading size="md" mb={4}>{title}</Heading>
-            <Box height={height}>
-                <ResponsiveContainer>{children}</ResponsiveContainer>
+const ChartCard = ({ title, height = "350px", children }) => {
+    const bg = useColorModeValue('white', 'gray.800');
+
+    return (
+        <Card height="full" boxShadow="md" bg={bg}>
+            <CardBody>
+                <Heading size={{ base: "sm", md: "md" }} mb={4}>{title}</Heading>
+                <Box height={height} width="100%" overflowX="auto">
+                    {children}
+                </Box>
+            </CardBody>
+        </Card>
+    );
+};
+
+const CustomTooltip = ({ active, payload, label }) => {
+    const bg = useColorModeValue('white', 'gray.700');
+    const borderColor = useColorModeValue('gray.200', 'gray.600');
+
+    if (active && payload && payload.length) {
+        return (
+            <Box
+                bg={bg}
+                p={3}
+                border="1px solid"
+                borderColor={borderColor}
+                borderRadius="md"
+                boxShadow="lg"
+            >
+                <Text fontSize="sm" fontWeight="bold" mb={1}>
+                    {formatDateToReadable(label)}
+                </Text>
+                <Text fontSize="sm" color="blue.500">
+                    Sales: {payload[0].value.toLocaleString()}
+                </Text>
             </Box>
-        </CardBody>
-    </Card>
-);
+        );
+    }
+    return null;
+};
 
 const WeeklyAnalysis = () => {
     const [data, setData] = useState(null);
@@ -79,6 +120,7 @@ const WeeklyAnalysis = () => {
     const [weeks, setWeeks] = useState(8);
     const toast = useToast();
     const chartGridColor = useColorModeValue('gray.200', 'gray.600');
+    const chartTextColor = useColorModeValue('gray.600', 'gray.300');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -105,7 +147,7 @@ const WeeklyAnalysis = () => {
     if (loading) {
         return (
             <Center h="100vh">
-                <Spinner size="xl" thickness="4px" />
+                <Spinner size="xl" thickness="4px" color="blue.500" />
             </Center>
         );
     }
@@ -119,17 +161,25 @@ const WeeklyAnalysis = () => {
     return (
         <Box
             height="100%"
-            p={6}
+            p={{ base: 3, md: 6 }}
             overflow="auto"
         >
-            <VStack spacing={6} align="stretch">
-                <HStack justify="space-between" align="center">
-                    <Heading size="lg">Weekly Analysis ({data?.current_year})</Heading>
+            <VStack spacing={{ base: 4, md: 6 }} align="stretch">
+                <HStack
+                    justify="space-between"
+                    align="center"
+                    flexDirection={{ base: "column", md: "row" }}
+                    spacing={{ base: 3, md: 0 }}
+                    width="100%"
+                >
+                    <Heading size={{ base: "md", md: "lg" }}>
+                        Weekly Analysis ({data?.current_year})
+                    </Heading>
                     <Select
                         value={weeks}
                         onChange={(e) => setWeeks(Number(e.target.value))}
-                        width="200px"
-                        size="md"
+                        width={{ base: "full", md: "200px" }}
+                        size={{ base: "sm", md: "md" }}
                     >
                         <option value={4}>Last 4 weeks</option>
                         <option value={8}>Last 8 weeks</option>
@@ -138,7 +188,7 @@ const WeeklyAnalysis = () => {
                     </Select>
                 </HStack>
 
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+                <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 3, md: 4 }}>
                     <StatCard
                         label="Weekly Sales"
                         value={currentWeek?.total_sales.toLocaleString()}
@@ -163,61 +213,84 @@ const WeeklyAnalysis = () => {
                     />
                 </SimpleGrid>
 
-                <Box width="full">
-                    <ChartCard title="Weekly Sales Trend">
+                <ChartCard title="Weekly Sales Trend" height={{ base: "300px", md: "400px" }}>
+                    <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                             data={data?.weekly_summary || []}
-                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                            margin={{
+                                top: 20,
+                                right: 10,
+                                left: 0,
+                                bottom: 60
+                            }}
                         >
                             <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
                             <XAxis
                                 dataKey="week"
-                                tickFormatter={formatDateToReadable}
+                                tickFormatter={formatDateShort}
                                 height={60}
-                                tick={{ angle: -45, textAnchor: 'end' }}
+                                angle={-45}
+                                textAnchor="end"
+                                tick={{ fill: chartTextColor, fontSize: 11 }}
+                                interval={0}
                             />
-                            <YAxis />
-                            <Tooltip
-                                labelFormatter={formatDateToReadable}
-                                formatter={(value) => [value.toLocaleString(), "Sales"]}
+                            <YAxis
+                                tick={{ fill: chartTextColor, fontSize: 11 }}
+                                width={60}
                             />
-                            <Legend />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend
+                                wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
+                            />
                             <Bar
-                                name="Week"
+                                name="Sales"
                                 dataKey="total_sales"
                                 fill="#3182CE"
-                                radius={[4, 4, 0, 0]}
+                                radius={[8, 8, 0, 0]}
+                                maxBarSize={60}
                             />
                         </BarChart>
-                    </ChartCard>
-                </Box>
+                    </ResponsiveContainer>
+                </ChartCard>
 
-                <Card>
+                <Card boxShadow="md">
                     <CardBody>
-                        <Heading size="md" mb={4}>Current Period Performance</Heading>
+                        <Heading size={{ base: "sm", md: "md" }} mb={4}>
+                            Current Period Performance
+                        </Heading>
                         <Box overflowX="auto">
-                            <Table variant="simple">
+                            <Table variant="simple" size={{ base: "sm", md: "md" }}>
                                 <Thead>
                                     <Tr>
-                                        <Th>Week Starting</Th>
-                                        <Th isNumeric>Total Sales</Th>
-                                        <Th isNumeric>Orders</Th>
-                                        <Th isNumeric>Unique Customers</Th>
-                                        <Th isNumeric>Avg Order Value</Th>
-                                        <Th>Busiest Day</Th>
-                                        <Th>Slowest Day</Th>
+                                        <Th fontSize={{ base: "xs", md: "sm" }}>Week Starting</Th>
+                                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Total Sales</Th>
+                                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Orders</Th>
+                                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>Customers</Th>
+                                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Avg Value</Th>
+                                        <Th fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Busiest Day</Th>
                                     </Tr>
                                 </Thead>
                                 <Tbody>
                                     {data?.weekly_summary?.map((week) => (
                                         <Tr key={week.week}>
-                                            <Td>{formatDateToReadable(week.week)}</Td>
-                                            <Td isNumeric>{week.total_sales.toLocaleString()}</Td>
-                                            <Td isNumeric>{week.total_orders}</Td>
-                                            <Td isNumeric>{week.unique_customers}</Td>
-                                            <Td isNumeric>{week.average_order_value.toFixed(2)}</Td>
-                                            <Td>{formatDateToReadable(week.busiest_day)}</Td>
-                                            <Td>{formatDateToReadable(week.slowest_day)}</Td>
+                                            <Td fontSize={{ base: "xs", md: "sm" }}>
+                                                {formatDateShort(week.week)}
+                                            </Td>
+                                            <Td isNumeric fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold">
+                                                {week.total_sales.toLocaleString()}
+                                            </Td>
+                                            <Td isNumeric fontSize={{ base: "xs", md: "sm" }}>
+                                                {week.total_orders}
+                                            </Td>
+                                            <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
+                                                {week.unique_customers}
+                                            </Td>
+                                            <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>
+                                                {week.average_order_value.toFixed(2)}
+                                            </Td>
+                                            <Td fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>
+                                                {formatDateShort(week.busiest_day)}
+                                            </Td>
                                         </Tr>
                                     ))}
                                 </Tbody>
@@ -226,22 +299,28 @@ const WeeklyAnalysis = () => {
                     </CardBody>
                 </Card>
 
-                <Card>
+                <Card boxShadow="md">
                     <CardBody>
-                        <Heading size="md" mb={4}>Previous Year Comparison</Heading>
+                        <Heading size={{ base: "sm", md: "md" }} mb={4}>
+                            Previous Year Comparison
+                        </Heading>
                         <Box overflowX="auto">
-                            <Table variant="simple">
+                            <Table variant="simple" size={{ base: "sm", md: "md" }}>
                                 <Thead>
                                     <Tr>
-                                        <Th>Week Starting</Th>
-                                        <Th isNumeric>Total Sales</Th>
+                                        <Th fontSize={{ base: "xs", md: "sm" }}>Week Starting</Th>
+                                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Total Sales</Th>
                                     </Tr>
                                 </Thead>
                                 <Tbody>
                                     {data?.previous_year_comparison?.map((week) => (
                                         <Tr key={week.week}>
-                                            <Td>{formatDateToReadable(week.week)}</Td>
-                                            <Td isNumeric>{week.total_sales.toLocaleString()}</Td>
+                                            <Td fontSize={{ base: "xs", md: "sm" }}>
+                                                {formatDateToReadable(week.week)}
+                                            </Td>
+                                            <Td isNumeric fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold">
+                                                {week.total_sales.toLocaleString()}
+                                            </Td>
                                         </Tr>
                                     ))}
                                 </Tbody>
