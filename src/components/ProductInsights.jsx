@@ -117,7 +117,8 @@ const ProductInsights = () => {
     const chartGridColor = useColorModeValue('gray.200', 'gray.600');
     const chartTextColor = useColorModeValue('gray.600', 'gray.300');
     const { isOpen, onOpen, onClose } = useDisclosure();
-    const chartRef = useRef(null);
+    const previewChartRef = useRef(null);
+    const fullChartRef = useRef(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -140,16 +141,19 @@ const ProductInsights = () => {
         fetchData();
     }, [toast]);
 
-    const exportToPDF = async () => {
+    const exportToPDF = async (useFullChart = false) => {
         try {
             setExportingPDF(true);
 
-            if (!chartRef.current) {
+            // Use the appropriate chart reference based on context
+            const chartElement = useFullChart ? fullChartRef.current : previewChartRef.current;
+
+            if (!chartElement) {
                 throw new Error('Chart reference not found');
             }
 
             // Capture the chart as canvas
-            const canvas = await html2canvas(chartRef.current, {
+            const canvas = await html2canvas(chartElement, {
                 scale: 2,
                 logging: false,
                 useCORS: true,
@@ -368,7 +372,7 @@ const ProductInsights = () => {
                         Showing top 10 products. Click "View All" to see the complete list.
                     </Text>
 
-                    <Box h={{ base: "300px", md: "400px" }} overflowX="auto">
+                    <Box h={{ base: "300px", md: "400px" }} overflowX="auto" ref={previewChartRef}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 data={topGrowthProducts}
@@ -415,7 +419,7 @@ const ProductInsights = () => {
                                     size="sm"
                                     colorScheme="blue"
                                     leftIcon={<Icon as={DownloadIcon} />}
-                                    onClick={exportToPDF}
+                                    onClick={() => exportToPDF(true)}
                                     isLoading={exportingPDF}
                                     loadingText="Exporting..."
                                 >
@@ -424,7 +428,7 @@ const ProductInsights = () => {
                             </HStack>
 
                             <Box
-                                ref={chartRef}
+                                ref={fullChartRef}
                                 h="600px"
                                 overflowY="auto"
                                 overflowX="auto"
