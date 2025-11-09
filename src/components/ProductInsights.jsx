@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Box,
     Card,
@@ -26,60 +26,16 @@ import {
     TabPanel,
     Text,
     useColorModeValue,
-    Button,
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalCloseButton,
-    useDisclosure,
+    Input,
+    InputGroup,
+    InputLeftElement,
     VStack,
     HStack,
-    Icon,
+    Badge,
 } from '@chakra-ui/react';
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    Legend,
-} from 'recharts';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 import { api } from '../utils/api';
 
-const CustomTooltip = ({ active, payload, label }) => {
-    const bg = useColorModeValue('white', 'gray.700');
-    const borderColor = useColorModeValue('gray.200', 'gray.600');
-
-    if (active && payload && payload.length) {
-        return (
-            <Box
-                bg={bg}
-                p={3}
-                border="1px solid"
-                borderColor={borderColor}
-                borderRadius="md"
-                boxShadow="lg"
-                maxW="250px"
-            >
-                <Text fontSize="sm" fontWeight="bold" mb={1} noOfLines={2}>
-                    {label}
-                </Text>
-                <Text fontSize="sm" color="blue.500">
-                    Revenue: {payload[0].value.toLocaleString()}
-                </Text>
-            </Box>
-        );
-    }
-    return null;
-};
-
-const DownloadIcon = (props) => (
+const SearchIcon = (props) => (
     <svg
         stroke="currentColor"
         fill="currentColor"
@@ -90,35 +46,16 @@ const DownloadIcon = (props) => (
         xmlns="http://www.w3.org/2000/svg"
         {...props}
     >
-        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path>
-    </svg>
-);
-
-const ChartIcon = (props) => (
-    <svg
-        stroke="currentColor"
-        fill="currentColor"
-        strokeWidth="0"
-        viewBox="0 0 24 24"
-        height="1em"
-        width="1em"
-        xmlns="http://www.w3.org/2000/svg"
-        {...props}
-    >
-        <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"></path>
+        <path d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"></path>
     </svg>
 );
 
 const ProductInsights = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [exportingPDF, setExportingPDF] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const toast = useToast();
-    const chartGridColor = useColorModeValue('gray.200', 'gray.600');
     const chartTextColor = useColorModeValue('gray.600', 'gray.300');
-    const { isOpen, onOpen, onClose } = useDisclosure();
-    const previewChartRef = useRef(null);
-    const fullChartRef = useRef(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -140,105 +77,6 @@ const ProductInsights = () => {
 
         fetchData();
     }, [toast]);
-
-    const exportToPDF = async (useFullChart = false) => {
-        try {
-            setExportingPDF(true);
-
-            // Use the appropriate chart reference based on context
-            const chartElement = useFullChart ? fullChartRef.current : previewChartRef.current;
-
-            if (!chartElement) {
-                throw new Error('Chart reference not found');
-            }
-
-            // Capture the chart as canvas
-            const canvas = await html2canvas(chartElement, {
-                scale: 2,
-                logging: false,
-                useCORS: true,
-                backgroundColor: '#ffffff'
-            });
-
-            const imgData = canvas.toDataURL('image/png');
-
-            // Create PDF with landscape orientation for better chart display
-            const pdf = new jsPDF({
-                orientation: 'landscape',
-                unit: 'mm',
-                format: 'a4'
-            });
-
-            // Add title
-            pdf.setFontSize(18);
-            pdf.text('Year-over-Year Product Growth Report', 15, 15);
-
-            // Add date
-            pdf.setFontSize(10);
-            pdf.text(`Generated: ${new Date().toLocaleDateString()}`, 15, 22);
-
-            // Calculate dimensions to fit the page
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = pageWidth - 30;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-            // Add image
-            pdf.addImage(imgData, 'PNG', 15, 30, imgWidth, Math.min(imgHeight, pageHeight - 40));
-
-            // Add product data table on new page if there's data
-            if (data?.growth_comparison && data.growth_comparison.length > 0) {
-                pdf.addPage();
-                pdf.setFontSize(14);
-                pdf.text('Product Details', 15, 15);
-
-                // Add table headers
-                pdf.setFontSize(9);
-                let yPos = 25;
-                pdf.text('Product Name', 15, yPos);
-                pdf.text('Revenue', 150, yPos);
-                pdf.text('Year', 230, yPos);
-
-                yPos += 5;
-                pdf.line(15, yPos, pageWidth - 15, yPos);
-                yPos += 5;
-
-                // Add table rows
-                data.growth_comparison.forEach((product, index) => {
-                    if (yPos > pageHeight - 20) {
-                        pdf.addPage();
-                        yPos = 20;
-                    }
-
-                    pdf.text(product.product_name.substring(0, 50), 15, yPos);
-                    pdf.text(product.total_revenue.toLocaleString(), 150, yPos);
-                    pdf.text(String(product.year), 230, yPos);
-                    yPos += 6;
-                });
-            }
-
-            // Save the PDF
-            pdf.save(`product-growth-report-${new Date().toISOString().split('T')[0]}.pdf`);
-
-            toast({
-                title: 'PDF exported successfully',
-                status: 'success',
-                duration: 3000,
-                isClosable: true,
-            });
-        } catch (error) {
-            console.error('PDF export error:', error);
-            toast({
-                title: 'Error exporting PDF',
-                description: error.message,
-                status: 'error',
-                duration: 5000,
-                isClosable: true,
-            });
-        } finally {
-            setExportingPDF(false);
-        }
-    };
 
     if (loading) {
         return (
@@ -341,136 +179,109 @@ const ProductInsights = () => {
 
             <Card boxShadow="md" mb={{ base: 4, md: 8 }}>
                 <CardBody>
-                    <HStack justify="space-between" align="center" mb={4} flexWrap="wrap" spacing={3}>
+                    <VStack spacing={4} align="stretch">
                         <Heading size={{ base: "sm", md: "md" }}>
-                            Year-over-Year Growth Preview
+                            Year-over-Year Product Growth
                         </Heading>
-                        <HStack spacing={2}>
-                            <Button
-                                size={{ base: "sm", md: "md" }}
-                                colorScheme="blue"
-                                variant="outline"
-                                leftIcon={<Icon as={ChartIcon} />}
-                                onClick={onOpen}
-                            >
-                                View All
-                            </Button>
-                            <Button
-                                size={{ base: "sm", md: "md" }}
-                                colorScheme="blue"
-                                leftIcon={<Icon as={DownloadIcon} />}
-                                onClick={exportToPDF}
-                                isLoading={exportingPDF}
-                                loadingText="Exporting..."
-                            >
-                                Export PDF
-                            </Button>
-                        </HStack>
-                    </HStack>
 
-                    <Text fontSize="sm" color="gray.600" mb={4}>
-                        Showing top 10 products. Click "View All" to see the complete list.
-                    </Text>
+                        <Text fontSize="sm" color="gray.600">
+                            Search and compare product performance across different years
+                        </Text>
 
-                    <Box h={{ base: "300px", md: "400px" }} overflowX="auto" ref={previewChartRef}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                data={topGrowthProducts}
-                                margin={{ top: 20, right: 10, left: 0, bottom: 80 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
-                                <XAxis
-                                    dataKey="product_name"
-                                    tick={{ fill: chartTextColor, fontSize: 10 }}
-                                    angle={-45}
-                                    textAnchor="end"
-                                    height={80}
-                                    interval={0}
-                                />
-                                <YAxis
-                                    tick={{ fill: chartTextColor, fontSize: 11 }}
-                                    width={60}
-                                />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} />
-                                <Bar
-                                    name="Revenue"
-                                    dataKey="total_revenue"
-                                    fill="#3182ce"
-                                    radius={[8, 8, 0, 0]}
-                                    maxBarSize={50}
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </Box>
+                        <InputGroup size={{ base: "sm", md: "md" }}>
+                            <InputLeftElement pointerEvents="none">
+                                <SearchIcon color="gray.400" />
+                            </InputLeftElement>
+                            <Input
+                                placeholder="Search by product name..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </InputGroup>
+
+                        <Box overflowX="auto">
+                            <Table variant="simple" size={{ base: "sm", md: "md" }}>
+                                <Thead>
+                                    <Tr>
+                                        <Th fontSize={{ base: "xs", md: "sm" }}>Product Name</Th>
+                                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Year</Th>
+                                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Revenue</Th>
+                                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
+                                            Growth
+                                        </Th>
+                                    </Tr>
+                                </Thead>
+                                <Tbody>
+                                    {Object.entries(groupedByProduct).map(([productName, years]) => {
+                                        // Sort years in descending order
+                                        const sortedYears = years.sort((a, b) => b.year - a.year);
+
+                                        return sortedYears.map((item, index) => {
+                                            // Calculate growth compared to previous year
+                                            let growth = null;
+                                            if (index < sortedYears.length - 1) {
+                                                const currentRevenue = item.total_revenue;
+                                                const previousRevenue = sortedYears[index + 1].total_revenue;
+                                                growth = ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+                                            }
+
+                                            return (
+                                                <Tr key={`${productName}-${item.year}`}>
+                                                    {index === 0 ? (
+                                                        <Td
+                                                            fontSize={{ base: "xs", md: "sm" }}
+                                                            fontWeight="semibold"
+                                                            rowSpan={sortedYears.length}
+                                                            maxW={{ base: "150px", md: "300px" }}
+                                                            isTruncated
+                                                        >
+                                                            {productName}
+                                                        </Td>
+                                                    ) : null}
+                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }}>
+                                                        <Badge colorScheme={item.year === data?.current_year ? 'blue' : 'gray'}>
+                                                            {item.year}
+                                                        </Badge>
+                                                    </Td>
+                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold">
+                                                        {item.total_revenue.toLocaleString()}
+                                                    </Td>
+                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
+                                                        {growth !== null ? (
+                                                            <HStack justify="flex-end" spacing={1}>
+                                                                <Text color={growth >= 0 ? 'green.500' : 'red.500'}>
+                                                                    {growth >= 0 ? '+' : ''}{growth.toFixed(1)}%
+                                                                </Text>
+                                                            </HStack>
+                                                        ) : (
+                                                            <Text color="gray.400">-</Text>
+                                                        )}
+                                                    </Td>
+                                                </Tr>
+                                            );
+                                        });
+                                    })}
+                                    {Object.keys(groupedByProduct).length === 0 && (
+                                        <Tr>
+                                            <Td colSpan={4} textAlign="center" py={8}>
+                                                <Text color="gray.500">
+                                                    {searchTerm ? 'No products found matching your search' : 'No data available'}
+                                                </Text>
+                                            </Td>
+                                        </Tr>
+                                    )}
+                                </Tbody>
+                            </Table>
+                        </Box>
+
+                        {filteredGrowthData.length > 0 && (
+                            <Text fontSize="xs" color="gray.500">
+                                Showing {Object.keys(groupedByProduct).length} product(s) with year-over-year data
+                            </Text>
+                        )}
+                    </VStack>
                 </CardBody>
             </Card>
-
-            {/* Modal for full chart view */}
-            <Modal isOpen={isOpen} onClose={onClose} size="6xl">
-                <ModalOverlay />
-                <ModalContent maxW="95vw">
-                    <ModalHeader>Complete Year-over-Year Growth Chart</ModalHeader>
-                    <ModalCloseButton />
-                    <ModalBody pb={6}>
-                        <VStack spacing={4} align="stretch">
-                            <HStack justify="flex-end">
-                                <Button
-                                    size="sm"
-                                    colorScheme="blue"
-                                    leftIcon={<Icon as={DownloadIcon} />}
-                                    onClick={() => exportToPDF(true)}
-                                    isLoading={exportingPDF}
-                                    loadingText="Exporting..."
-                                >
-                                    Export PDF
-                                </Button>
-                            </HStack>
-
-                            <Box
-                                ref={fullChartRef}
-                                h="600px"
-                                overflowY="auto"
-                                overflowX="auto"
-                                bg="white"
-                                p={4}
-                                borderRadius="md"
-                            >
-                                <Heading size="md" mb={4}>Year-over-Year Product Growth</Heading>
-                                <ResponsiveContainer width="100%" height={Math.max(600, data?.growth_comparison?.length * 30 || 600)}>
-                                    <BarChart
-                                        data={data?.growth_comparison || []}
-                                        margin={{ top: 20, right: 30, left: 20, bottom: 150 }}
-                                        layout="horizontal"
-                                    >
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                        <XAxis
-                                            dataKey="product_name"
-                                            tick={{ fill: '#4a5568', fontSize: 9 }}
-                                            angle={-45}
-                                            textAnchor="end"
-                                            height={150}
-                                            interval={0}
-                                        />
-                                        <YAxis
-                                            tick={{ fill: '#4a5568', fontSize: 10 }}
-                                            width={80}
-                                        />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} />
-                                        <Bar
-                                            name="Revenue"
-                                            dataKey="total_revenue"
-                                            fill="#3182ce"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </Box>
-                        </VStack>
-                    </ModalBody>
-                </ModalContent>
-            </Modal>
 
             <Tabs variant="enclosed" colorScheme="blue">
                 <TabList>
