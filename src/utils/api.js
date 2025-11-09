@@ -17,7 +17,6 @@ export const api = {
         getMain: async () => {
             try {
                 const response = await axiosInstance.get('/dashboard/');
-                console.log(response)
                 return response.data;
             } catch (error) {
                 handleError(error);

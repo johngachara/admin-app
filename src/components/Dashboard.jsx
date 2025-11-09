@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
     Box,
     Grid,
-    GridItem,
     Stat,
     StatLabel,
     StatNumber,
@@ -15,16 +14,15 @@ import {
     Spinner,
     Center,
     useToast,
-    Tabs,
-    TabList,
-    TabPanels,
-    Tab,
-    TabPanel,
     Text,
     Divider,
-    Container,
     useColorModeValue,
     VStack,
+    HStack,
+    Badge,
+    Progress,
+    Avatar,
+    Flex,
 } from '@chakra-ui/react';
 import {
     LineChart,
@@ -37,41 +35,102 @@ import {
     Tooltip,
     ResponsiveContainer,
     Legend,
-    ComposedChart,
+    PieChart,
+    Pie,
+    Cell,
 } from 'recharts';
 import { api } from '../utils/api';
 
-// Reusable Components
-const StatCardComponent = ({ label, value, subtext, comparison, trend }) => (
-    <Card boxShadow="sm" transition="all 0.3s" _hover={{ transform: 'translateY(-2px)', boxShadow: 'md' }}>
-        <CardBody>
-            <Stat>
-                <StatLabel fontSize="sm" color="gray.600">{label}</StatLabel>
-                <StatNumber fontSize="2xl" fontWeight="bold" my={2}>{value?.toLocaleString() || 0}</StatNumber>
-                {(comparison || subtext) && (
-                    <StatHelpText display="flex" alignItems="center" gap={1}>
-                        {trend && <StatArrow type={trend} />}
-                        {subtext}
-                    </StatHelpText>
-                )}
-            </Stat>
-        </CardBody>
-    </Card>
-);
+const COLORS = ['#3182CE', '#38B2AC', '#805AD5', '#DD6B20', '#D69E2E'];
 
-const ChartContainer = ({ title, height = "400px", children }) => (
-    <Card h="full">
-        <CardBody>
-            <Heading size="md" mb={4}>{title}</Heading>
-            <Box h={height} w="full">
-                <ResponsiveContainer>{children}</ResponsiveContainer>
+const StatCardComponent = ({ label, value, subtext, comparison, trend, icon }) => {
+    const cardBg = useColorModeValue('white', 'gray.800');
+    const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+    return (
+        <Card
+            bg={cardBg}
+            boxShadow="lg"
+            borderWidth="1px"
+            borderColor={borderColor}
+            transition="all 0.3s"
+            _hover={{ transform: 'translateY(-4px)', boxShadow: 'xl' }}
+        >
+            <CardBody>
+                <Stat>
+                    <HStack justify="space-between" mb={2}>
+                        <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium" color="gray.600">
+                            {label}
+                        </StatLabel>
+                        {icon && (
+                            <Box fontSize="2xl" color="blue.500">
+                                {icon}
+                            </Box>
+                        )}
+                    </HStack>
+                    <StatNumber fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold" color="gray.800" _dark={{ color: "white" }}>
+                        {value?.toLocaleString() || 0}
+                    </StatNumber>
+                    {(comparison || subtext) && (
+                        <StatHelpText display="flex" alignItems="center" gap={1} fontSize={{ base: "xs", md: "sm" }} mt={2}>
+                            {trend && <StatArrow type={trend} />}
+                            <Text>{subtext}</Text>
+                        </StatHelpText>
+                    )}
+                </Stat>
+            </CardBody>
+        </Card>
+    );
+};
+
+const ChartContainer = ({ title, subtitle, height = "400px", children }) => {
+    const cardBg = useColorModeValue('white', 'gray.800');
+    const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+    return (
+        <Card bg={cardBg} boxShadow="lg" borderWidth="1px" borderColor={borderColor} h="full">
+            <CardBody>
+                <VStack align="stretch" spacing={3} mb={4}>
+                    <Heading size={{ base: "sm", md: "md" }}>{title}</Heading>
+                    {subtitle && <Text fontSize="sm" color="gray.600">{subtitle}</Text>}
+                </VStack>
+                <Box h={height} w="full">
+                    <ResponsiveContainer>{children}</ResponsiveContainer>
+                </Box>
+            </CardBody>
+        </Card>
+    );
+};
+
+const CustomTooltip = ({ active, payload, label }) => {
+    const bg = useColorModeValue('white', 'gray.700');
+    const borderColor = useColorModeValue('gray.200', 'gray.600');
+
+    if (active && payload && payload.length) {
+        return (
+            <Box
+                bg={bg}
+                p={3}
+                border="1px solid"
+                borderColor={borderColor}
+                borderRadius="md"
+                boxShadow="lg"
+            >
+                <Text fontSize="sm" fontWeight="bold" mb={1}>
+                    {label}
+                </Text>
+                {payload.map((entry, index) => (
+                    <Text key={index} fontSize="sm" color={entry.color}>
+                        {entry.name}: {entry.value.toLocaleString()}
+                    </Text>
+                ))}
             </Box>
-        </CardBody>
-    </Card>
-);
+        );
+    }
+    return null;
+};
 
 const Dashboard = () => {
-    // States
     const [data, setData] = useState({
         dashboard: null,
         patterns: null,
@@ -80,12 +139,10 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const toast = useToast();
 
-    // Theme values
     const bgColor = useColorModeValue('gray.50', 'gray.900');
-    const chartGridColor = useColorModeValue('#e0e0e0', '#4a5568');
-    const lineColor = useColorModeValue('#3182ce', '#63b3ed');
+    const chartGridColor = useColorModeValue('#e2e8f0', '#4a5568');
+    const chartTextColor = useColorModeValue('#4a5568', '#a0aec0');
 
-    // Data fetching
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -115,117 +172,257 @@ const Dashboard = () => {
         };
 
         fetchData();
-    }, []);
+    }, [toast]);
 
     if (loading) {
         return (
             <Center h="100vh" bg={bgColor}>
-                <Spinner size="xl" color="blue.500" thickness="4px" />
+                <VStack spacing={4}>
+                    <Spinner size="xl" color="blue.500" thickness="4px" />
+                    <Text color="gray.600">Loading dashboard...</Text>
+                </VStack>
             </Center>
         );
     }
 
-    // Utility functions
-    const formatHour = (hour) => {
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const formattedHour = hour % 12 || 12;
-        return `${formattedHour}${ampm}`;
-    };
-
     const { dashboard, patterns, products } = data;
     const topProduct = products?.current_year_performance?.[0];
+    const topProducts = products?.current_year_performance?.slice(0, 5) || [];
 
+    // Calculate sales trend
+    const todayVsYesterday = dashboard?.today_metrics?.total_sales > dashboard?.yesterday_total_sales ? 'increase' : 'decrease';
+    const weekTrend = dashboard?.current_week_sales > dashboard?.last_week_sales ? 'increase' : 'decrease';
 
     return (
-        <Box minH="100vh" bg={bgColor} p={{ base: 4, lg: 6 }} maxW="100%">
-            <Container  maxWidth="100%">
-                <VStack spacing={8} align="stretch">
-                    {/* Header */}
-                    <Heading>Dashboard Overview</Heading>
+        <Box minH="100vh" bg={bgColor} p={{ base: 3, md: 6 }} overflow="auto">
+            <VStack spacing={{ base: 4, md: 8 }} align="stretch" maxW="1600px" mx="auto">
+                {/* Header */}
+                <Box>
+                    <Heading size={{ base: "lg", md: "xl" }} mb={2}>
+                        Dashboard Overview
+                    </Heading>
+                    <Text color="gray.600" fontSize={{ base: "sm", md: "md" }}>
+                        Welcome back! Here's what's happening with your sales today.
+                    </Text>
+                </Box>
 
-                    {/* Key Metrics */}
-                    <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
-                        <StatCardComponent
-                            label="Today's Sales"
-                            value={dashboard?.today_metrics?.total_sales}
-                            subtext={`vs Yesterday (${dashboard?.yesterday_total_sales?.toLocaleString()})`}
-                            trend={dashboard?.today_metrics?.total_sales > dashboard?.yesterday_total_sales ? 'increase' : 'decrease'}
-                        />
+                {/* Key Metrics */}
+                <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 3, md: 6 }}>
+                    <StatCardComponent
+                        label="Today's Sales"
+                        value={dashboard?.today_metrics?.total_sales}
+                        subtext={`vs Yesterday (${dashboard?.yesterday_total_sales?.toLocaleString()})`}
+                        trend={todayVsYesterday}
+                        icon="💰"
+                    />
+                    <StatCardComponent
+                        label="Today's Orders"
+                        value={dashboard?.today_metrics?.sales_count}
+                        subtext={`${dashboard?.today_metrics?.total_items_sold} items sold`}
+                        icon="📦"
+                    />
+                    <StatCardComponent
+                        label="Weekly Performance"
+                        value={dashboard?.current_week_sales}
+                        subtext={`Last week: ${dashboard?.last_week_sales?.toLocaleString()}`}
+                        trend={weekTrend}
+                        icon="📈"
+                    />
+                    <StatCardComponent
+                        label="Top Product"
+                        value={topProduct?.total_revenue}
+                        subtext={topProduct?.product_name?.substring(0, 30)}
+                        icon="⭐"
+                    />
+                </SimpleGrid>
 
-                        <StatCardComponent
-                            label="Top Product"
-                            value={topProduct?.total_revenue}
-                            subtext={topProduct?.product_name}
-                        />
-                        <StatCardComponent
-                            label="Weekly Performance"
-                            value={dashboard?.current_week_sales}
-                            subtext="vs last week"
-                            trend={dashboard?.current_week_sales > dashboard?.last_week_sales ? 'increase' : 'decrease'}
-                        />
-                    </SimpleGrid>
+                {/* Charts Section */}
+                <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={{ base: 4, md: 6 }}>
+                    {/* Top Products Chart */}
+                    <ChartContainer
+                        title="Top 5 Products Performance"
+                        subtitle="Current year revenue breakdown"
+                        height={{ base: "300px", md: "400px" }}
+                    >
+                        <BarChart
+                            data={topProducts}
+                            margin={{ top: 20, right: 10, left: 0, bottom: 80 }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                            <XAxis
+                                dataKey="product_name"
+                                angle={-45}
+                                textAnchor="end"
+                                height={80}
+                                tick={{ fill: chartTextColor, fontSize: 10 }}
+                                interval={0}
+                            />
+                            <YAxis tick={{ fill: chartTextColor, fontSize: 11 }} width={60} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} />
+                            <Bar
+                                dataKey="total_revenue"
+                                fill="#3182CE"
+                                name="Revenue"
+                                radius={[8, 8, 0, 0]}
+                                maxBarSize={60}
+                            />
+                        </BarChart>
+                    </ChartContainer>
 
-                    {/* Main Content */}
-                    <Tabs isLazy colorScheme="blue">
-                        <TabList>
-                            <Tab>Sales Overview</Tab>
-                            <Tab>Product Performance</Tab>
+                    {/* Quick Stats Card */}
+                    <Card boxShadow="lg" borderWidth="1px" borderColor={useColorModeValue('gray.200', 'gray.700')}>
+                        <CardBody>
+                            <VStack align="stretch" spacing={4}>
+                                <Heading size={{ base: "sm", md: "md" }}>Quick Stats</Heading>
+                                <Divider />
 
-                        </TabList>
-
-                        <TabPanels>
-                            {/* Sales Overview Tab */}
-                            <TabPanel p={0} pt={6}>
-                                <Grid templateColumns={{ base: "1fr", xl: "3fr 1fr" }} gap={6}>
-                                    <VStack spacing={6}>
-                                        <Card w="full">
-                                            <CardBody>
-                                                <VStack align="start" spacing={3}>
-                                                    <Text fontWeight="bold">Today's Details</Text>
-                                                    <Divider />
-                                                    <Text>Orders: {dashboard?.today_metrics?.sales_count}</Text>
-                                                    <Text>Items: {dashboard?.today_metrics?.total_items_sold}</Text>
-                                                    <Text>Customers: {dashboard?.today_metrics?.unique_customers}</Text>
-                                                </VStack>
-                                            </CardBody>
-                                        </Card>
-
-                                        <Card w="full">
-                                            <CardBody>
-                                                <Stat>
-                                                    <StatLabel>All Time Stats</StatLabel>
-                                                    <StatNumber>{dashboard?.all_time_totals?.total_sales?.toLocaleString()}</StatNumber>
-                                                    <StatHelpText>
-                                                        {dashboard?.all_time_totals?.total_orders?.toLocaleString()} orders
-                                                    </StatHelpText>
-                                                </Stat>
-                                            </CardBody>
-                                        </Card>
-                                    </VStack>
-                                </Grid>
-                            </TabPanel>
-
-                            {/* Product Performance Tab */}
-                            <TabPanel p={0} pt={6}>
-                                <Box width="100%">
-                                <Grid templateColumns={{ base: "1fr", xl: "3fr 2fr" }} gap={6}>
-                                    <ChartContainer title="Top Products Revenue">
-                                        <BarChart data={products?.current_year_performance?.slice(0, 5)}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
-                                            <XAxis dataKey="product_name" />
-                                            <YAxis />
-                                            <Tooltip formatter={(value) => `${value.toLocaleString()}`} />
-                                            <Legend />
-                                            <Bar dataKey="total_revenue" fill={lineColor} name="Revenue" />
-                                        </BarChart>
-                                    </ChartContainer>
-                                </Grid>
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="medium" color="gray.600" mb={2}>
+                                        Today's Customers
+                                    </Text>
+                                    <HStack justify="space-between">
+                                        <Text fontSize="2xl" fontWeight="bold">
+                                            {dashboard?.today_metrics?.unique_customers}
+                                        </Text>
+                                        <Badge colorScheme="green" fontSize="sm">Active</Badge>
+                                    </HStack>
                                 </Box>
-                            </TabPanel>
-                        </TabPanels>
-                    </Tabs>
-                </VStack>
-            </Container>
+
+                                <Divider />
+
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="medium" color="gray.600" mb={2}>
+                                        All Time Revenue
+                                    </Text>
+                                    <Text fontSize="2xl" fontWeight="bold">
+                                        {dashboard?.all_time_totals?.total_sales?.toLocaleString()}
+                                    </Text>
+                                    <Text fontSize="xs" color="gray.500" mt={1}>
+                                        {dashboard?.all_time_totals?.total_orders?.toLocaleString()} total orders
+                                    </Text>
+                                </Box>
+
+                                <Divider />
+
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="medium" color="gray.600" mb={2}>
+                                        Average Order Value
+                                    </Text>
+                                    <Text fontSize="2xl" fontWeight="bold">
+                                        {(dashboard?.today_metrics?.total_sales / dashboard?.today_metrics?.sales_count || 0).toFixed(2)}
+                                    </Text>
+                                    <Text fontSize="xs" color="gray.500" mt={1}>
+                                        Today's average
+                                    </Text>
+                                </Box>
+                            </VStack>
+                        </CardBody>
+                    </Card>
+                </Grid>
+
+                {/* Product Performance Details */}
+                <Card boxShadow="lg" borderWidth="1px" borderColor={useColorModeValue('gray.200', 'gray.700')}>
+                    <CardBody>
+                        <Heading size={{ base: "sm", md: "md" }} mb={4}>
+                            Top Products Breakdown
+                        </Heading>
+                        <VStack spacing={4} align="stretch">
+                            {topProducts.map((product, index) => {
+                                const maxRevenue = topProducts[0]?.total_revenue || 1;
+                                const percentage = (product.total_revenue / maxRevenue) * 100;
+
+                                return (
+                                    <Box key={index}>
+                                        <HStack justify="space-between" mb={2}>
+                                            <HStack spacing={3} flex={1}>
+                                                <Avatar
+                                                    size="sm"
+                                                    name={product.product_name}
+                                                    bg={COLORS[index % COLORS.length]}
+                                                />
+                                                <VStack align="start" spacing={0} flex={1}>
+                                                    <Text
+                                                        fontSize={{ base: "xs", md: "sm" }}
+                                                        fontWeight="semibold"
+                                                        noOfLines={1}
+                                                    >
+                                                        {product.product_name}
+                                                    </Text>
+                                                    <Text fontSize="xs" color="gray.500">
+                                                        {product.units_sold} units sold
+                                                    </Text>
+                                                </VStack>
+                                            </HStack>
+                                            <VStack align="end" spacing={0}>
+                                                <Text fontSize={{ base: "sm", md: "md" }} fontWeight="bold">
+                                                    {product.total_revenue.toLocaleString()}
+                                                </Text>
+                                                <Text fontSize="xs" color="gray.500">
+                                                    {product.unique_customers} customers
+                                                </Text>
+                                            </VStack>
+                                        </HStack>
+                                        <Progress
+                                            value={percentage}
+                                            size="sm"
+                                            colorScheme="blue"
+                                            borderRadius="full"
+                                        />
+                                    </Box>
+                                );
+                            })}
+                        </VStack>
+                    </CardBody>
+                </Card>
+
+                {/* Additional Insights */}
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={{ base: 3, md: 6 }}>
+                    <Card boxShadow="md" borderWidth="1px" borderColor={useColorModeValue('gray.200', 'gray.700')}>
+                        <CardBody>
+                            <VStack align="start" spacing={3}>
+                                <Heading size="sm">📊 Sales Velocity</Heading>
+                                <Text fontSize="3xl" fontWeight="bold" color="blue.500">
+                                    {(dashboard?.today_metrics?.total_sales / Math.max(new Date().getHours(), 1)).toFixed(0)}
+                                </Text>
+                                <Text fontSize="sm" color="gray.600">
+                                    Average sales per hour today
+                                </Text>
+                            </VStack>
+                        </CardBody>
+                    </Card>
+
+                    <Card boxShadow="md" borderWidth="1px" borderColor={useColorModeValue('gray.200', 'gray.700')}>
+                        <CardBody>
+                            <VStack align="start" spacing={3}>
+                                <Heading size="sm">🎯 Conversion Rate</Heading>
+                                <Text fontSize="3xl" fontWeight="bold" color="green.500">
+                                    {dashboard?.today_metrics?.sales_count > 0
+                                        ? ((dashboard?.today_metrics?.unique_customers / dashboard?.today_metrics?.sales_count) * 100).toFixed(1)
+                                        : 0}%
+                                </Text>
+                                <Text fontSize="sm" color="gray.600">
+                                    Customer to order ratio
+                                </Text>
+                            </VStack>
+                        </CardBody>
+                    </Card>
+
+                    <Card boxShadow="md" borderWidth="1px" borderColor={useColorModeValue('gray.200', 'gray.700')}>
+                        <CardBody>
+                            <VStack align="start" spacing={3}>
+                                <Heading size="sm">📦 Items per Order</Heading>
+                                <Text fontSize="3xl" fontWeight="bold" color="purple.500">
+                                    {(dashboard?.today_metrics?.total_items_sold / dashboard?.today_metrics?.sales_count || 0).toFixed(1)}
+                                </Text>
+                                <Text fontSize="sm" color="gray.600">
+                                    Average items per transaction
+                                </Text>
+                            </VStack>
+                        </CardBody>
+                    </Card>
+                </SimpleGrid>
+            </VStack>
         </Box>
     );
 };
