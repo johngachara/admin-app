@@ -32,6 +32,7 @@ import {
     VStack,
     HStack,
     Badge,
+    Divider,
 } from '@chakra-ui/react';
 import { api } from '../utils/api';
 
@@ -55,7 +56,6 @@ const ProductInsights = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const toast = useToast();
-    const chartTextColor = useColorModeValue('gray.600', 'gray.300');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -81,7 +81,10 @@ const ProductInsights = () => {
     if (loading) {
         return (
             <Center h="100vh">
-                <Spinner size="xl" thickness="4px" color="blue.500" />
+                <VStack spacing={4}>
+                    <Spinner size="xl" thickness="4px" color="blue.500" />
+                    <Text color="gray.600">Loading product insights...</Text>
+                </VStack>
             </Center>
         );
     }
@@ -101,302 +104,359 @@ const ProductInsights = () => {
         ? ((topProductGrowth.current - topProductGrowth.previous) / topProductGrowth.previous) * 100
         : 0;
 
-    // Get top 10 products for preview
-    const topGrowthProducts = data?.growth_comparison?.slice(0, 10) || [];
+    // Filter growth comparison data based on search term
+    const filteredGrowthData = data?.growth_comparison?.filter(item =>
+        item.product_name.toLowerCase().includes(searchTerm.toLowerCase())
+    ) || [];
+
+    // Group data by product name for year-over-year comparison
+    const groupedByProduct = {};
+    filteredGrowthData.forEach(item => {
+        if (!groupedByProduct[item.product_name]) {
+            groupedByProduct[item.product_name] = [];
+        }
+        groupedByProduct[item.product_name].push(item);
+    });
 
     return (
-        <Box p={{ base: 3, md: 6 }} height="100%" overflow="auto">
-            <Heading mb={6} size={{ base: "md", md: "lg" }}>
-                Product Insights ({data?.current_year})
-            </Heading>
-
-            <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 3, md: 4 }} mb={8}>
-                <Card boxShadow="sm">
-                    <CardBody>
-                        <Stat>
-                            <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">
-                                Top Product Revenue
-                            </StatLabel>
-                            <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
-                                {topProduct?.total_revenue.toLocaleString()}
-                            </StatNumber>
-                            <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
-                                <StatArrow type={growthPercent >= 0 ? 'increase' : 'decrease'} />
-                                {Math.abs(growthPercent).toFixed(1)}% vs last year
-                            </StatHelpText>
-                        </Stat>
-                    </CardBody>
-                </Card>
-
-                <Card boxShadow="sm">
-                    <CardBody>
-                        <Stat>
-                            <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">
-                                Top Product Units
-                            </StatLabel>
-                            <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
-                                {topProduct?.units_sold.toLocaleString()}
-                            </StatNumber>
-                            <StatHelpText fontSize={{ base: "xs", md: "sm" }} noOfLines={1}>
-                                {topProduct?.product_name}
-                            </StatHelpText>
-                        </Stat>
-                    </CardBody>
-                </Card>
-
-                <Card boxShadow="sm">
-                    <CardBody>
-                        <Stat>
-                            <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">
-                                Average Price
-                            </StatLabel>
-                            <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
-                                {topProduct?.average_price.toFixed(2)}
-                            </StatNumber>
-                            <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
-                                {topProduct?.total_orders} orders
-                            </StatHelpText>
-                        </Stat>
-                    </CardBody>
-                </Card>
-
-                <Card boxShadow="sm">
-                    <CardBody>
-                        <Stat>
-                            <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">
-                                Customer Reach
-                            </StatLabel>
-                            <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
-                                {topProduct?.unique_customers}
-                            </StatNumber>
-                            <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
-                                unique customers
-                            </StatHelpText>
-                        </Stat>
-                    </CardBody>
-                </Card>
-            </SimpleGrid>
-
-            <Card boxShadow="md" mb={{ base: 4, md: 8 }}>
-                <CardBody>
-                    <VStack spacing={4} align="stretch">
-                        <Heading size={{ base: "sm", md: "md" }}>
-                            Year-over-Year Product Growth
+        <Box p={{ base: 3, md: 6 }} height="100%" overflow="auto" bg={useColorModeValue('gray.50', 'gray.900')}>
+            <VStack spacing={{ base: 4, md: 6 }} align="stretch">
+                {/* Header */}
+                <HStack justify="space-between" flexWrap="wrap" spacing={4}>
+                    <VStack align="start" spacing={1}>
+                        <Heading size={{ base: "md", md: "lg" }}>
+                            Product Insights
                         </Heading>
-
-                        <Text fontSize="sm" color="gray.600">
-                            Search and compare product performance across different years
+                        <Text fontSize={{ base: "sm", md: "md" }} color="gray.600">
+                            Current Year: {data?.current_year}
                         </Text>
+                    </VStack>
+                </HStack>
 
-                        <InputGroup size={{ base: "sm", md: "md" }}>
-                            <InputLeftElement pointerEvents="none">
-                                <SearchIcon color="gray.400" />
-                            </InputLeftElement>
-                            <Input
-                                placeholder="Search by product name..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </InputGroup>
+                {/* Key Metrics */}
+                <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 3, md: 4 }}>
+                    <Card boxShadow="sm" borderTop="4px solid" borderTopColor="blue.400">
+                        <CardBody>
+                            <Stat>
+                                <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">
+                                    Top Product Revenue
+                                </StatLabel>
+                                <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
+                                    {topProduct?.total_revenue.toLocaleString()}
+                                </StatNumber>
+                                <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+                                    <StatArrow type={growthPercent >= 0 ? 'increase' : 'decrease'} />
+                                    {Math.abs(growthPercent).toFixed(1)}% vs last year
+                                </StatHelpText>
+                            </Stat>
+                        </CardBody>
+                    </Card>
 
-                        <Box overflowX="auto">
-                            <Table variant="simple" size={{ base: "sm", md: "md" }}>
-                                <Thead>
-                                    <Tr>
-                                        <Th fontSize={{ base: "xs", md: "sm" }}>Product Name</Th>
-                                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Year</Th>
-                                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Revenue</Th>
-                                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
-                                            Growth
-                                        </Th>
-                                    </Tr>
-                                </Thead>
-                                <Tbody>
-                                    {Object.entries(groupedByProduct).map(([productName, years]) => {
-                                        // Sort years in descending order
-                                        const sortedYears = years.sort((a, b) => b.year - a.year);
+                    <Card boxShadow="sm" borderTop="4px solid" borderTopColor="green.400">
+                        <CardBody>
+                            <Stat>
+                                <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">
+                                    Top Product Units
+                                </StatLabel>
+                                <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
+                                    {topProduct?.units_sold.toLocaleString()}
+                                </StatNumber>
+                                <StatHelpText fontSize={{ base: "xs", md: "sm" }} noOfLines={1}>
+                                    {topProduct?.product_name}
+                                </StatHelpText>
+                            </Stat>
+                        </CardBody>
+                    </Card>
 
-                                        return sortedYears.map((item, index) => {
-                                            // Calculate growth compared to previous year
-                                            let growth = null;
-                                            if (index < sortedYears.length - 1) {
-                                                const currentRevenue = item.total_revenue;
-                                                const previousRevenue = sortedYears[index + 1].total_revenue;
-                                                growth = ((currentRevenue - previousRevenue) / previousRevenue) * 100;
-                                            }
+                    <Card boxShadow="sm" borderTop="4px solid" borderTopColor="purple.400">
+                        <CardBody>
+                            <Stat>
+                                <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">
+                                    Average Price
+                                </StatLabel>
+                                <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
+                                    {topProduct?.average_price.toFixed(2)}
+                                </StatNumber>
+                                <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+                                    {topProduct?.total_orders} orders
+                                </StatHelpText>
+                            </Stat>
+                        </CardBody>
+                    </Card>
 
-                                            return (
-                                                <Tr key={`${productName}-${item.year}`}>
-                                                    {index === 0 ? (
-                                                        <Td
-                                                            fontSize={{ base: "xs", md: "sm" }}
-                                                            fontWeight="semibold"
-                                                            rowSpan={sortedYears.length}
-                                                            maxW={{ base: "150px", md: "300px" }}
-                                                            isTruncated
-                                                        >
-                                                            {productName}
+                    <Card boxShadow="sm" borderTop="4px solid" borderTopColor="orange.400">
+                        <CardBody>
+                            <Stat>
+                                <StatLabel fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">
+                                    Customer Reach
+                                </StatLabel>
+                                <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
+                                    {topProduct?.unique_customers}
+                                </StatNumber>
+                                <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+                                    unique customers
+                                </StatHelpText>
+                            </Stat>
+                        </CardBody>
+                    </Card>
+                </SimpleGrid>
+
+                {/* Year-over-Year Growth Table */}
+                <Card boxShadow="md">
+                    <CardBody>
+                        <VStack spacing={4} align="stretch">
+                            <VStack align="start" spacing={2}>
+                                <Heading size={{ base: "sm", md: "md" }}>
+                                    Year-over-Year Product Growth
+                                </Heading>
+                                <Text fontSize="sm" color="gray.600">
+                                    Search and compare product performance across different years
+                                </Text>
+                            </VStack>
+
+                            <InputGroup size={{ base: "sm", md: "md" }}>
+                                <InputLeftElement pointerEvents="none">
+                                    <SearchIcon color="gray.400" />
+                                </InputLeftElement>
+                                <Input
+                                    placeholder="Search by product name..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    bg={useColorModeValue('white', 'gray.800')}
+                                />
+                            </InputGroup>
+
+                            <Divider />
+
+                            <Box overflowX="auto">
+                                <Table variant="simple" size={{ base: "sm", md: "md" }}>
+                                    <Thead>
+                                        <Tr>
+                                            <Th fontSize={{ base: "xs", md: "sm" }}>Product Name</Th>
+                                            <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Year</Th>
+                                            <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Revenue</Th>
+                                            <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
+                                                Growth %
+                                            </Th>
+                                        </Tr>
+                                    </Thead>
+                                    <Tbody>
+                                        {Object.entries(groupedByProduct).map(([productName, years]) => {
+                                            // Sort years in descending order
+                                            const sortedYears = years.sort((a, b) => b.year - a.year);
+
+                                            return sortedYears.map((item, index) => {
+                                                // Calculate growth compared to previous year
+                                                let growth = null;
+                                                if (index < sortedYears.length - 1) {
+                                                    const currentRevenue = item.total_revenue;
+                                                    const previousRevenue = sortedYears[index + 1].total_revenue;
+                                                    growth = ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+                                                }
+
+                                                return (
+                                                    <Tr key={`${productName}-${item.year}`}>
+                                                        {index === 0 ? (
+                                                            <Td
+                                                                fontSize={{ base: "xs", md: "sm" }}
+                                                                fontWeight="semibold"
+                                                                rowSpan={sortedYears.length}
+                                                                maxW={{ base: "150px", md: "300px" }}
+                                                                isTruncated
+                                                                title={productName}
+                                                            >
+                                                                {productName}
+                                                            </Td>
+                                                        ) : null}
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }}>
+                                                            <Badge colorScheme={item.year === data?.current_year ? 'blue' : 'gray'}>
+                                                                {item.year}
+                                                            </Badge>
                                                         </Td>
-                                                    ) : null}
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }}>
-                                                        <Badge colorScheme={item.year === data?.current_year ? 'blue' : 'gray'}>
-                                                            {item.year}
-                                                        </Badge>
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold">
-                                                        {item.total_revenue.toLocaleString()}
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
-                                                        {growth !== null ? (
-                                                            <HStack justify="flex-end" spacing={1}>
-                                                                <Text color={growth >= 0 ? 'green.500' : 'red.500'}>
-                                                                    {growth >= 0 ? '+' : ''}{growth.toFixed(1)}%
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold">
+                                                            {item.total_revenue.toLocaleString()}
+                                                        </Td>
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
+                                                            {growth !== null ? (
+                                                                <HStack justify="flex-end" spacing={1}>
+                                                                    <Text
+                                                                        color={growth >= 0 ? 'green.500' : 'red.500'}
+                                                                        fontWeight="medium"
+                                                                    >
+                                                                        {growth >= 0 ? '+' : ''}{growth.toFixed(1)}%
+                                                                    </Text>
+                                                                </HStack>
+                                                            ) : (
+                                                                <Text color="gray.400">-</Text>
+                                                            )}
+                                                        </Td>
+                                                    </Tr>
+                                                );
+                                            });
+                                        })}
+                                        {Object.keys(groupedByProduct).length === 0 && (
+                                            <Tr>
+                                                <Td colSpan={4} textAlign="center" py={8}>
+                                                    <Text color="gray.500" fontSize={{ base: "sm", md: "md" }}>
+                                                        {searchTerm ? 'No products found matching your search' : 'No data available'}
+                                                    </Text>
+                                                </Td>
+                                            </Tr>
+                                        )}
+                                    </Tbody>
+                                </Table>
+                            </Box>
+
+                            {filteredGrowthData.length > 0 && (
+                                <HStack justify="space-between" flexWrap="wrap">
+                                    <Text fontSize="xs" color="gray.500">
+                                        Showing {Object.keys(groupedByProduct).length} product(s) with year-over-year data
+                                    </Text>
+                                    <Text fontSize="xs" color="gray.500">
+                                        Total entries: {filteredGrowthData.length}
+                                    </Text>
+                                </HStack>
+                            )}
+                        </VStack>
+                    </CardBody>
+                </Card>
+
+                {/* Performance Tabs */}
+                <Tabs variant="enclosed" colorScheme="blue">
+                    <TabList>
+                        <Tab fontSize={{ base: "xs", md: "sm" }}>Current Year Performance</Tab>
+                        <Tab fontSize={{ base: "xs", md: "sm" }}>All-Time Performance</Tab>
+                    </TabList>
+
+                    <TabPanels>
+                        <TabPanel p={0} pt={4}>
+                            <Card boxShadow="md">
+                                <CardBody>
+                                    <Heading size={{ base: "sm", md: "md" }} mb={4}>
+                                        Current Year Performance Details
+                                    </Heading>
+                                    <Box overflowX="auto">
+                                        <Table variant="simple" size={{ base: "sm", md: "md" }}>
+                                            <Thead>
+                                                <Tr>
+                                                    <Th fontSize={{ base: "xs", md: "sm" }}>Product</Th>
+                                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Revenue</Th>
+                                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Units</Th>
+                                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>Avg Price</Th>
+                                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Orders</Th>
+                                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Customers</Th>
+                                                    <Th fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>First Sale</Th>
+                                                    <Th fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>Last Sale</Th>
+                                                </Tr>
+                                            </Thead>
+                                            <Tbody>
+                                                {data?.current_year_performance?.map((product, index) => (
+                                                    <Tr key={product.product_name}>
+                                                        <Td fontSize={{ base: "xs", md: "sm" }} maxW={{ base: "120px", md: "200px" }}>
+                                                            <HStack spacing={2}>
+                                                                <Badge colorScheme={index < 3 ? 'green' : 'gray'} fontSize="xs">
+                                                                    #{index + 1}
+                                                                </Badge>
+                                                                <Text isTruncated title={product.product_name}>
+                                                                    {product.product_name}
                                                                 </Text>
                                                             </HStack>
-                                                        ) : (
-                                                            <Text color="gray.400">-</Text>
-                                                        )}
-                                                    </Td>
+                                                        </Td>
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold">
+                                                            {product.total_revenue.toLocaleString()}
+                                                        </Td>
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }}>
+                                                            {product.units_sold.toLocaleString()}
+                                                        </Td>
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
+                                                            {product.average_price.toFixed(2)}
+                                                        </Td>
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>
+                                                            {product.total_orders}
+                                                        </Td>
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>
+                                                            {product.unique_customers}
+                                                        </Td>
+                                                        <Td fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>
+                                                            {new Date(product.first_sale).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                        </Td>
+                                                        <Td fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>
+                                                            {new Date(product.last_sale).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                        </Td>
+                                                    </Tr>
+                                                ))}
+                                            </Tbody>
+                                        </Table>
+                                    </Box>
+                                </CardBody>
+                            </Card>
+                        </TabPanel>
+
+                        <TabPanel p={0} pt={4}>
+                            <Card boxShadow="md">
+                                <CardBody>
+                                    <Heading size={{ base: "sm", md: "md" }} mb={4}>
+                                        All-Time Performance Details
+                                    </Heading>
+                                    <Box overflowX="auto">
+                                        <Table variant="simple" size={{ base: "sm", md: "md" }}>
+                                            <Thead>
+                                                <Tr>
+                                                    <Th fontSize={{ base: "xs", md: "sm" }}>Product</Th>
+                                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Revenue</Th>
+                                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Units</Th>
+                                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>Avg Price</Th>
+                                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Orders</Th>
+                                                    <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Customers</Th>
+                                                    <Th fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>First Sale</Th>
+                                                    <Th fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>Last Sale</Th>
                                                 </Tr>
-                                            );
-                                        });
-                                    })}
-                                    {Object.keys(groupedByProduct).length === 0 && (
-                                        <Tr>
-                                            <Td colSpan={4} textAlign="center" py={8}>
-                                                <Text color="gray.500">
-                                                    {searchTerm ? 'No products found matching your search' : 'No data available'}
-                                                </Text>
-                                            </Td>
-                                        </Tr>
-                                    )}
-                                </Tbody>
-                            </Table>
-                        </Box>
-
-                        {filteredGrowthData.length > 0 && (
-                            <Text fontSize="xs" color="gray.500">
-                                Showing {Object.keys(groupedByProduct).length} product(s) with year-over-year data
-                            </Text>
-                        )}
-                    </VStack>
-                </CardBody>
-            </Card>
-
-            <Tabs variant="enclosed" colorScheme="blue">
-                <TabList>
-                    <Tab fontSize={{ base: "xs", md: "sm" }}>Current Year Performance</Tab>
-                    <Tab fontSize={{ base: "xs", md: "sm" }}>All-Time Performance</Tab>
-                </TabList>
-
-                <TabPanels>
-                    <TabPanel p={0} pt={4}>
-                        <Card boxShadow="md">
-                            <CardBody>
-                                <Box overflowX="auto">
-                                    <Table variant="simple" size={{ base: "sm", md: "md" }}>
-                                        <Thead>
-                                            <Tr>
-                                                <Th fontSize={{ base: "xs", md: "sm" }}>Product</Th>
-                                                <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Revenue</Th>
-                                                <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Units</Th>
-                                                <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>Avg Price</Th>
-                                                <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Orders</Th>
-                                                <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Customers</Th>
-                                                <Th fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>First Sale</Th>
-                                                <Th fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>Last Sale</Th>
-                                            </Tr>
-                                        </Thead>
-                                        <Tbody>
-                                            {data?.current_year_performance?.map((product) => (
-                                                <Tr key={product.product_name}>
-                                                    <Td fontSize={{ base: "xs", md: "sm" }} maxW={{ base: "120px", md: "200px" }} isTruncated>
-                                                        {product.product_name}
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold">
-                                                        {product.total_revenue.toLocaleString()}
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }}>
-                                                        {product.units_sold.toLocaleString()}
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
-                                                        {product.average_price.toFixed(2)}
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>
-                                                        {product.total_orders}
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>
-                                                        {product.unique_customers}
-                                                    </Td>
-                                                    <Td fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>
-                                                        {new Date(product.first_sale).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                    </Td>
-                                                    <Td fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>
-                                                        {new Date(product.last_sale).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                    </Td>
-                                                </Tr>
-                                            ))}
-                                        </Tbody>
-                                    </Table>
-                                </Box>
-                            </CardBody>
-                        </Card>
-                    </TabPanel>
-
-                    <TabPanel p={0} pt={4}>
-                        <Card boxShadow="md">
-                            <CardBody>
-                                <Box overflowX="auto">
-                                    <Table variant="simple" size={{ base: "sm", md: "md" }}>
-                                        <Thead>
-                                            <Tr>
-                                                <Th fontSize={{ base: "xs", md: "sm" }}>Product</Th>
-                                                <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Revenue</Th>
-                                                <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Units</Th>
-                                                <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>Avg Price</Th>
-                                                <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Orders</Th>
-                                                <Th isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>Customers</Th>
-                                                <Th fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>First Sale</Th>
-                                                <Th fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>Last Sale</Th>
-                                            </Tr>
-                                        </Thead>
-                                        <Tbody>
-                                            {data?.all_time_performance?.map((product) => (
-                                                <Tr key={product.product_name}>
-                                                    <Td fontSize={{ base: "xs", md: "sm" }} maxW={{ base: "120px", md: "200px" }} isTruncated>
-                                                        {product.product_name}
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold">
-                                                        {product.total_revenue.toLocaleString()}
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }}>
-                                                        {product.units_sold.toLocaleString()}
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
-                                                        {product.average_price.toFixed(2)}
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>
-                                                        {product.total_orders}
-                                                    </Td>
-                                                    <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>
-                                                        {product.unique_customers}
-                                                    </Td>
-                                                    <Td fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>
-                                                        {new Date(product.first_sale).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                    </Td>
-                                                    <Td fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>
-                                                        {new Date(product.last_sale).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                    </Td>
-                                                </Tr>
-                                            ))}
-                                        </Tbody>
-                                    </Table>
-                                </Box>
-                            </CardBody>
-                        </Card>
-                    </TabPanel>
-                </TabPanels>
-            </Tabs>
+                                            </Thead>
+                                            <Tbody>
+                                                {data?.all_time_performance?.map((product, index) => (
+                                                    <Tr key={product.product_name}>
+                                                        <Td fontSize={{ base: "xs", md: "sm" }} maxW={{ base: "120px", md: "200px" }}>
+                                                            <HStack spacing={2}>
+                                                                <Badge colorScheme={index < 3 ? 'blue' : 'gray'} fontSize="xs">
+                                                                    #{index + 1}
+                                                                </Badge>
+                                                                <Text isTruncated title={product.product_name}>
+                                                                    {product.product_name}
+                                                                </Text>
+                                                            </HStack>
+                                                        </Td>
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold">
+                                                            {product.total_revenue.toLocaleString()}
+                                                        </Td>
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }}>
+                                                            {product.units_sold.toLocaleString()}
+                                                        </Td>
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", md: "table-cell" }}>
+                                                            {product.average_price.toFixed(2)}
+                                                        </Td>
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>
+                                                            {product.total_orders}
+                                                        </Td>
+                                                        <Td isNumeric fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", lg: "table-cell" }}>
+                                                            {product.unique_customers}
+                                                        </Td>
+                                                        <Td fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>
+                                                            {new Date(product.first_sale).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                        </Td>
+                                                        <Td fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", xl: "table-cell" }}>
+                                                            {new Date(product.last_sale).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                        </Td>
+                                                    </Tr>
+                                                ))}
+                                            </Tbody>
+                                        </Table>
+                                    </Box>
+                                </CardBody>
+                            </Card>
+                        </TabPanel>
+                    </TabPanels>
+                </Tabs>
+            </VStack>
         </Box>
     );
 };
