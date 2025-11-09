@@ -31,7 +31,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://clerk.gachara.store; connect-src 'self' https://www.gachara.store https://clerk.gachara.store; img-src 'self' https://static.vecteezy.com data: https://img.clerk.com; style-src 'self' 'unsafe-inline'; font-src 'self' ; frame-src 'self' ; worker-src 'self' blob:; object-src 'none';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://clerk.alltechnyeri.co.ke; connect-src 'self' https://alltechnyeri.co.ke https://clerk.alltechnyeri.co.ke; img-src 'self' https://static.vecteezy.com data: https://img.clerk.com; style-src 'self' 'unsafe-inline'; font-src 'self' ; frame-src 'self' ; worker-src 'self' blob:; object-src 'none';"
         },
 
         {
